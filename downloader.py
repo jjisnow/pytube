@@ -8,9 +8,6 @@ import subprocess
 from pathlib import Path
 import logging
 
-CURSOR_UP_ONE = '\x1b[1A'
-ERASE_LINE = '\x1b[2K'
-
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -18,15 +15,6 @@ def show_progress_bar(stream, chunk, file_handle, bytes_remaining):
     # print('stream: {}'.format(stream))
     # print('file_handle: {}'.format(file_handle))
     print('KBytes_remaining: {:,.1f} KB'.format(bytes_remaining / 1024))
-    # print()
-    # print('', end='\r')
-    # sys.stdout.write(CURSOR_UP_ONE)
-    # sys.stdout.write(ERASE_LINE)
-    # sys.stdout.write(CURSOR_UP_ONE)
-    # sys.stdout.write(ERASE_LINE)
-    sys.stdout.flush()
-    sleep(0.2)
-
 
 def downloader(*args, **kwargs):
     # defaults to having youtube link
@@ -53,10 +41,6 @@ def downloader(*args, **kwargs):
             logging.info("downloading video first......")
             video_fp = Path(download_target.download())
 
-            # obj = SmartDL(download_target.url, '.')
-            # obj.start()
-            # video_fp = Path(obj.get_dest())
-
             logging.info("Video file: {}".format(video_fp))
 
             # then the first audio stream
@@ -64,14 +48,6 @@ def downloader(*args, **kwargs):
             audio_fp = Path(yt.streams.filter(only_audio=True).first().download(
                 output_path=video_fp.parent,
                 filename=video_fp.stem + "-audio"))
-
-            # download_target = yt.streams.filter(only_audio=True).first()
-            # obj = SmartDL(download_target.url, './audio')
-            # obj.start()
-            # audio_fp = Path(obj.get_dest())
-            # logging.info("Temporary audio file: {}".format(audio_fp))
-            # audio_fp = audio_fp.replace(
-            #     audio_fp.parents[1] / audio_fp.stem + "-audio" + audio_fp.suffix)
 
             logging.info("Final audio file: {}".format(audio_fp))
 
@@ -104,4 +80,7 @@ def downloader(*args, **kwargs):
 
 
 if __name__ == '__main__':
+    import time
+    start_time=time.time()
     downloader()
+    print("--- {:.2f} seconds ---".format(time.time() - start_time))
