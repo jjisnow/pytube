@@ -13,12 +13,12 @@
 </div>
 
 # pytube
-*pytube* is a very serious, lightweight, dependency-free Python library (and command-line utility) for downloading YouTube Videos.
+*pytube* is a Python script (and command-line utility) for downloading YouTube Videos.
 
 ## Description
 YouTube is the most popular video-sharing platform in the world and as a hacker you may encounter a situation where you want to script something to download videos.  For this I present to you *pytube*.
 
-*pytube* is a lightweight library written in Python. It has no third party dependencies and aims to be highly reliable.
+*pytube* is a script written in python
 
 *pytube* also makes pipelining easy, allowing you to specify callback functions for different download events, such as  ``on progress`` or ``on complete``.
 
@@ -46,7 +46,7 @@ Finally *pytube* also includes a command-line utility, allowing you to quickly d
 - Outputs Caption Tracks to .srt format (SubRip Subtitle)
 - Ability to Capture Thumbnail URL.
 - Extensively Documented Source Code
-- No Third-Party Dependencies
+- Dependency on pySmartDL for improved downloading
 
 ## Installation
 
