@@ -51,27 +51,31 @@ def downloader(*args, **kwargs):
 
         if not download_target.audio_codec:
             logging.info("downloading video first......")
-            video_fp = Path(download_target.download())
+            # video_fp = Path(download_target.download())
+            logging.info("current directory: {}".format(Path.cwd()))
+            logging.info("Downloading url: {}".format(download_target.url))
 
-            # obj = SmartDL(download_target.url, '.')
-            # obj.start()
-            # video_fp = Path(obj.get_dest())
+            obj = SmartDL(download_target.url, str(Path.cwd()), fix_urls=False)
+            obj.start()
+            video_fp = Path(obj.get_dest())
 
             logging.info("Video file: {}".format(video_fp))
 
             # then the first audio stream
             logging.info("downloading audio as well!")
-            audio_fp = Path(yt.streams.filter(only_audio=True).first().download(
-                output_path=video_fp.parent,
-                filename=video_fp.stem + "-audio"))
+            # audio_fp = Path(yt.streams.filter(only_audio=True).first().download(
+            #     output_path=video_fp.parent,
+            #     filename=video_fp.stem + "-audio"))
 
-            # download_target = yt.streams.filter(only_audio=True).first()
-            # obj = SmartDL(download_target.url, './audio')
-            # obj.start()
-            # audio_fp = Path(obj.get_dest())
-            # logging.info("Temporary audio file: {}".format(audio_fp))
-            # audio_fp = audio_fp.replace(
-            #     audio_fp.parents[1] / audio_fp.stem + "-audio" + audio_fp.suffix)
+            download_target = yt.streams.filter(only_audio=True).first()
+            logging.info("Downloading url: {}".format(download_target.url))
+            obj = SmartDL(download_target.url, str(Path.cwd() / Path("audio")))
+            obj.start()
+            audio_fp = Path(obj.get_dest())
+            logging.info("Temporary audio file: {}".format(audio_fp))
+            audio_fp = audio_fp.replace(
+                str(audio_fp.parents[1] / audio_fp.stem) + "-audio"
+                + str(audio_fp.suffix))
 
             logging.info("Final audio file: {}".format(audio_fp))
 
