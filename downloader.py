@@ -1,59 +1,82 @@
+from pySmartDL import SmartDL
+
 from pytube import YouTube
 import sys
 from pprint import pprint
 from time import sleep
 import subprocess
 from pathlib import Path
+import logging
 
 CURSOR_UP_ONE = '\x1b[1A'
 ERASE_LINE = '\x1b[2K'
 
+logging.basicConfig(level=logging.DEBUG)
+
 
 def show_progress_bar(stream, chunk, file_handle, bytes_remaining):
-    print('stream: {}'.format(stream))
-    print('file_handle: {}'.format(file_handle))
-    print('bytes_remaining: {}'.format(bytes_remaining))
-    print('', end='\r')
-    sys.stdout.write(CURSOR_UP_ONE)
-    sys.stdout.write(ERASE_LINE)
-    sys.stdout.write(CURSOR_UP_ONE)
-    sys.stdout.write(ERASE_LINE)
-
-    # sys.stdout.flush()
-    sleep(0.1)
+    # print('stream: {}'.format(stream))
+    # print('file_handle: {}'.format(file_handle))
+    print('KBytes_remaining: {:,.1f} KB'.format(bytes_remaining / 1024))
+    # print()
+    # print('', end='\r')
+    # sys.stdout.write(CURSOR_UP_ONE)
+    # sys.stdout.write(ERASE_LINE)
+    # sys.stdout.write(CURSOR_UP_ONE)
+    # sys.stdout.write(ERASE_LINE)
+    sys.stdout.flush()
+    sleep(0.2)
 
 
 def downloader(*args, **kwargs):
     # defaults to having youtube link
-    args = sys.argv or ["", "https://www.youtube.com/watch?v=B7bqAsxee4I"]
+    if len(sys.argv) == 1:
+        args = [sys.argv[0], "https://www.youtube.com/watch?v=B7bqAsxee4I"]
+    else:
+        args = sys.argv
     print(args)
-    print(args[1:])
     for file in args[1:]:
         yt = YouTube(file)
         pprint(yt.streams.all())
         try:
             itag = int(input("Which stream do you want? (integer) "))
         except ValueError:
-            print("you need to provide a number!")
+            logging.error("you need to provide a number!")
 
+        # for longer files, display some progress info
         yt.register_on_progress_callback(show_progress_bar)
 
         # if no audio then download the first audio as well
         download_target = yt.streams.get_by_itag(itag)
 
         if not download_target.audio_codec:
-            print("downloading video first......")
-            # first download the video
+            logging.info("downloading video first......")
             video_fp = Path(download_target.download())
 
+            # obj = SmartDL(download_target.url, '.')
+            # obj.start()
+            # video_fp = Path(obj.get_dest())
+
+            logging.info("Video file: {}".format(video_fp))
+
             # then the first audio stream
-            print("downloading audio as well!")
+            logging.info("downloading audio as well!")
             audio_fp = Path(yt.streams.filter(only_audio=True).first().download(
                 output_path=video_fp.parent,
                 filename=video_fp.stem + "-audio"))
 
+            # download_target = yt.streams.filter(only_audio=True).first()
+            # obj = SmartDL(download_target.url, './audio')
+            # obj.start()
+            # audio_fp = Path(obj.get_dest())
+            # logging.info("Temporary audio file: {}".format(audio_fp))
+            # audio_fp = audio_fp.replace(
+            #     audio_fp.parents[1] / audio_fp.stem + "-audio" + audio_fp.suffix)
+
+            logging.info("Final audio file: {}".format(audio_fp))
+
             # mix audio as well afterwards
-            print("attempting to mix audio and video")
+            logging.info("attempting to mix audio and video")
             # -y: global ie overwrite without asking
             # -i: input file
             # -r: set frame rate in fps
@@ -61,18 +84,20 @@ def downloader(*args, **kwargs):
             # -c:a copy means copy audio streams
             # -c:v copy means copy video stream codec
             # -filter:a aresample=async=1 means resample audio to fit frame rates
+            final_fp = str(video_fp.parent / video_fp.stem) + "-output.mkv"
             cmd = \
                 'ffmpeg -y -i "{}"  -r {} -i "{}"  -c:a copy -c:v copy "{}"'.format(
                     audio_fp,
                     download_target.fps,
                     video_fp,
-                    str(video_fp.parent / video_fp.stem) + "-output.mkv"
+                    final_fp
                 )
-            print("Command to be run: {}".format(cmd))
+            logging.info("Command to be run: {}".format(cmd))
             subprocess.run(cmd, shell=True)  # "Muxing Done
-            print('Muxing Done')
+            logging.info("Final muxed file: {}".format(final_fp))
+            logging.info('Muxing Done')
         else:
-            print("downloading VIDEO ONLY")
+            logging.info("downloading VIDEO ONLY")
             download_target.download()
 
     print("All done!")
