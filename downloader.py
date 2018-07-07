@@ -1,3 +1,5 @@
+import os
+
 from pySmartDL import SmartDL
 
 from pytube import YouTube
@@ -12,10 +14,9 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def downloader(*args, **kwargs):
-    # defaults to having youtube link
+    # Use a provided link or the args provided
     if len(sys.argv) == 1:
-        link = input("Provide a youtube link [default is a 3 second link]: ") \
-               or "https://www.youtube.com/watch?v=B7bqAsxee4I"
+        link = input("Provide a youtube link to download: ")
 
         args = [sys.argv[0], link]
     else:
@@ -81,15 +82,39 @@ def downloader(*args, **kwargs):
             logging.info('Muxing Done')
         else:
             logging.info("downloading VIDEO ONLY")
-            download_video(download_target)
+            video_fp = download_video(download_target)
+
+        logging.info("CLEANUP: deleting video file")
+        # check for errors
+        errors = os.remove(video_fp)
+        if not errors:
+            logging.info("Success!")
+
+        if audio_fp:
+            logging.info("CLEANUP: deleting audio file")
+            # check for errors
+            errors = os.remove(audio_fp)
+            if not errors:
+                logging.info("Success!")
 
     print("All done!")
+
 
 def download_video(download_target):
     video_fp = Path.cwd() / Path(download_target.default_filename)
     logging.info("Targeting destination: {}".format(video_fp))
-    obj = SmartDL(download_target.url, str(video_fp), threads=3)
-    obj.start()
+    obj = SmartDL(download_target.url, str(video_fp), threads=5)
+    obj.start(blocking=False)
+    while not obj.isFinished():
+        print("Speed: %s" % obj.get_speed(human=True))
+        print("Already downloaded: %s" % obj.get_dl_size(human=True))
+        print("Eta: %s" % obj.get_eta(human=True))
+        print("Progress: %d%%" % (obj.get_progress() * 100))
+        print("Progress bar: %s" % obj.get_progress_bar())
+        print("Status: %s" % obj.get_status())
+        print("\n" * 2 + "=" * 50 + "\n" * 2, end="")
+        time.sleep(2)
+
     video_fp = Path(obj.get_dest())
     print("Final Video file: {}".format(video_fp))
     return video_fp
@@ -97,6 +122,7 @@ def download_video(download_target):
 
 if __name__ == '__main__':
     import time
-    start_time=time.time()
+
+    start_time = time.time()
     downloader()
     print("--- {:.2f} seconds ---".format(time.time() - start_time))
