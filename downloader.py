@@ -5,7 +5,6 @@ from pySmartDL import SmartDL
 from pytube import YouTube
 import sys
 from pprint import pprint
-from time import sleep
 import subprocess
 from pathlib import Path
 import logging
@@ -39,7 +38,7 @@ def downloader(*args, **kwargs):
 
         if not download_target.audio_codec:
             logging.info("downloading video first......")
-            logging.info("current directory: {}".format(Path.cwd()))
+            logging.debug("current directory: {}".format(Path.cwd()))
             logging.info("Downloading url: {}".format(download_target.url))
 
             video_fp = download_video(download_target)
@@ -53,7 +52,7 @@ def downloader(*args, **kwargs):
             audio_fp = str(video_fp.parent / video_fp.stem) \
                        + "-audio" \
                        + Path(download_target.default_filename).suffix
-            logging.info("Targeting destination: {}".format(audio_fp))
+            logging.debug("Targeting destination: {}".format(audio_fp))
             obj = SmartDL(download_target.url, audio_fp)
             obj.start()
             audio_fp = Path(obj.get_dest())
@@ -76,7 +75,7 @@ def downloader(*args, **kwargs):
                     video_fp,
                     final_fp
                 )
-            logging.info("Command to be run: {}".format(cmd))
+            logging.debug("Command to be run: {}".format(cmd))
             subprocess.run(cmd, shell=True)
             logging.info("Final muxed file: {}".format(final_fp))
             logging.info('Muxing Done')
@@ -89,6 +88,8 @@ def downloader(*args, **kwargs):
         errors = os.remove(video_fp)
         if not errors:
             logging.info("Success!")
+        else:
+            logging.error("Error code detected: {}".format(errors))
 
         if audio_fp:
             logging.info("CLEANUP: deleting audio file")
@@ -96,13 +97,15 @@ def downloader(*args, **kwargs):
             errors = os.remove(audio_fp)
             if not errors:
                 logging.info("Success!")
+            else:
+                logging.error("Error code detected: {}".format(errors))
 
     print("All done!")
 
 
 def download_video(download_target):
     video_fp = Path.cwd() / Path(download_target.default_filename)
-    logging.info("Targeting destination: {}".format(video_fp))
+    logging.debug("Targeting destination: {}".format(video_fp))
     obj = SmartDL(download_target.url, str(video_fp), threads=5)
     obj.start(blocking=False)
     while not obj.isFinished():
