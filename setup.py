@@ -15,10 +15,10 @@ with open('LICENSE') as readme_file:
 setup(
     name='pytube',
     version='9.2.3',
-    author='Nick Ficano',
-    author_email='nficano@gmail.com',
+    author='jjisnow',
+    author_email='jjisnow@gmail.com',
     packages=['pytube', 'pytube.contrib'],
-    url='https://github.com/nficano/pytube',
+    url='https://github.com/jjisnow/pytube',
     license=license,
     entry_points={
         'console_scripts': [
