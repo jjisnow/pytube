@@ -36,27 +36,16 @@ def downloader(*args, **kwargs):
 
         download_target = yt.streams.get_by_itag(itag)
 
-        if not download_target.audio_codec:
+        if not download_target.includes_audio_track:
             logging.info("downloading video first......")
             logging.debug("current directory: {}".format(Path.cwd()))
-            logging.info("Downloading url: {}".format(download_target.url))
-
-            video_fp = download_video(download_target)
+            video_fp = download_file(download_target)
 
             # then the first audio stream
             logging.info("downloading audio as well!")
 
             download_target = yt.streams.filter(only_audio=True).first()
-            logging.info("Downloading url: {}".format(download_target.url))
-
-            audio_fp = str(video_fp.parent / video_fp.stem) \
-                       + "-audio" \
-                       + Path(download_target.default_filename).suffix
-            logging.debug("Targeting destination: {}".format(audio_fp))
-            obj = SmartDL(download_target.url, audio_fp)
-            obj.start()
-            audio_fp = Path(obj.get_dest())
-            print("Final audio file: {}".format(audio_fp))
+            audio_fp = download_file(download_target)
 
             # mix audio as well afterwards
             logging.info("attempting to mix audio and video")
@@ -81,7 +70,7 @@ def downloader(*args, **kwargs):
             logging.info('Muxing Done')
         else:
             logging.info("downloading VIDEO ONLY")
-            video_fp = download_video(download_target)
+            video_fp = download_file(download_target)
 
         logging.info("CLEANUP: deleting video file")
         # check for errors
@@ -103,24 +92,33 @@ def downloader(*args, **kwargs):
     print("All done!")
 
 
-def download_video(download_target):
-    video_fp = Path.cwd() / Path(download_target.default_filename)
-    logging.debug("Targeting destination: {}".format(video_fp))
-    obj = SmartDL(download_target.url, str(video_fp), threads=5)
+def download_file(download_target):
+    logging.info("Downloading url: {}".format(download_target.url))
+
+    fp = Path.cwd() / Path(download_target.default_filename)
+    # add '-audio' suffix if audio file
+    if download_target.type == 'audio':
+        fp = str(fp.parent / fp.stem) \
+             + "-audio" \
+             + Path(download_target.default_filename).suffix
+    logging.debug("Targeting destination: {}".format(fp))
+
+    # download the file
+    obj = SmartDL(download_target.url, str(fp), threads=5)
     obj.start(blocking=False)
     while not obj.isFinished():
-        print("Speed: %s" % obj.get_speed(human=True))
-        print("Already downloaded: %s" % obj.get_dl_size(human=True))
-        print("Eta: %s" % obj.get_eta(human=True))
-        print("Progress: %d%%" % (obj.get_progress() * 100))
-        print("Progress bar: %s" % obj.get_progress_bar())
-        print("Status: %s" % obj.get_status())
-        print("\n" * 2 + "=" * 50 + "\n" * 2, end="")
+        logging.info("Speed: %s" % obj.get_speed(human=True))
+        logging.debug("Already downloaded: %s" % obj.get_dl_size(human=True))
+        logging.info("Eta: %s" % obj.get_eta(human=True))
+        logging.debug("Progress: %d%%" % (obj.get_progress() * 100))
+        logging.info("Progress bar: %s" % obj.get_progress_bar())
+        logging.debug("Status: %s" % obj.get_status())
+        logging.debug("\n" * 2 + "=" * 50 + "\n" * 2)
         time.sleep(2)
+    fp = Path(obj.get_dest())
 
-    video_fp = Path(obj.get_dest())
-    print("Final Video file: {}".format(video_fp))
-    return video_fp
+    logging.info("Final {} file: {}".format(download_target.type, fp))
+    return fp
 
 
 if __name__ == '__main__':
