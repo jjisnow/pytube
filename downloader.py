@@ -2,19 +2,21 @@
 Will download video and mux with audio, or audio only, or video with audio already
 
 Usage:
-  downloader.py [URL...] [--verbose | --quiet]
+  downloader.py [URL...] [--verbose | --quiet] [--itag value]
 
 Arguments:
   URL   individual websites to download video from
 
 Options:
-  -h, --help     Show this screen
-  -v, --verbose  Show verbose output
-  -q, --quiet    Run quietly
+  -h, --help          Show this screen
+  -v, --verbose       Show verbose output
+  -q, --quiet         Run quietly
+  -i, --itag value    The stream to download
 
 """
 
 import os
+import shutil
 import sys
 
 from pySmartDL import SmartDL
@@ -51,6 +53,9 @@ def downloader():
         yt = YouTube(file)
         pprint(yt.streams.all())
         while True:
+            if arguments['--itag']:
+                itag = arguments['--itag']
+                break
             try:
                 itag = int(input("Which stream do you want? (specify itag): "))
                 break
@@ -62,7 +67,7 @@ def downloader():
         logging.info("DOWNLOADING:")
         video_fp = None
         audio_fp = None
-        # note this attribute only applies to video with audio included
+        # note this 'includes_audio_track' only applies to video with audio included
         if not download_target.includes_audio_track:
             logging.info("downloading video first......")
             logging.debug("current directory: {}".format(Path.cwd()))
@@ -112,7 +117,7 @@ def downloader():
                                 final_base.suffix
                                 ))
             logging.debug("Renaming file: {}".format(final_fp))
-            os.rename(final_base, final_fp)
+            shutil.move(final_base, final_fp)
 
         logging.info("CLEANUP:")
         if audio_fp:
