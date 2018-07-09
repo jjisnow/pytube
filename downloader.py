@@ -29,16 +29,19 @@ from docopt import docopt
 def downloader():
     arguments = docopt(__doc__, help=True)
     if arguments['--verbose']:
-        logging.basicConfig(level=logging.DEBUG)
+        log_level = logging.DEBUG
     elif arguments['--quiet']:
-        logging.basicConfig(level=logging.NOTSET)
+        log_level = logging.CRITICAL
     else:
-        logging.basicConfig(level=logging.INFO)
+        log_level = logging.INFO
+
+    config_loggers(arguments, log_level)
 
     # Use a provided link or the args provided
     if len(arguments['URL']) == 0:
         link = input("Provide a youtube link to download: ")
         arguments['URL'].append(link)
+
     logging.info("Final args: {}".format(arguments))
 
     start_time = time.time()
@@ -48,7 +51,7 @@ def downloader():
         pprint(yt.streams.all())
         while True:
             try:
-                itag = int(input("Which stream do you want? (integer): "))
+                itag = int(input("Which stream do you want? (specify itag): "))
                 break
             except ValueError:
                 logging.error("you need to provide a number!")
@@ -120,6 +123,31 @@ def downloader():
 
     print("All done!")
     print("--- {:.2f} seconds ---".format(time.time() - start_time))
+
+
+def config_loggers(arguments, log_level):
+    """ displays the supplied arguments to stdout before switching back to the stderr
+    handler
+
+    :param arguments:
+    :param log_level:
+    :return:
+    """
+
+    logging.basicConfig(level=log_level)
+    logger = logging.getLogger()
+
+    stdout_handler = logging.StreamHandler(stream=sys.stdout)
+    stdout_handler.setLevel(log_level)
+    logger.addHandler(stdout_handler)
+
+    root_handler = logger.handlers[0]
+    root_handler.setLevel(log_level)
+    logger.removeHandler(root_handler)
+
+    logger.info("Supplied args: \n {}".format(arguments))
+    logger.removeHandler(stdout_handler)
+    logger.addHandler(root_handler)
 
 
 def download_file(download_target):
