@@ -1,4 +1,5 @@
-""" Downloader of video website links
+""" Downloader of video website links.
+Will download video and mux with audio, or audio only, or video with audio already
 
 Usage:
   downloader.py [URL...] [--verbose | --quiet]
@@ -59,7 +60,9 @@ def downloader():
         download_target = yt.streams.get_by_itag(itag)
 
         logging.info("DOWNLOADING:")
+        video_fp = None
         audio_fp = None
+        # note this attribute only applies to video with audio included
         if not download_target.includes_audio_track:
             logging.info("downloading video first......")
             logging.debug("current directory: {}".format(Path.cwd()))
@@ -93,32 +96,43 @@ def downloader():
             logging.info("Final muxed file: {}".format(final_fp))
             logging.info('Muxing Done')
         else:
-            logging.info("downloading VIDEO ONLY")
-            video_fp = download_file(download_target)
+            logging.info("downloading {} ONLY".format(download_target.type))
+            if download_target.type == 'video':
+                video_fp = download_file(download_target)
+                final_base = video_fp
+            elif download_target.type == 'audio':
+                audio_fp = download_file(download_target)
+                final_base = audio_fp
+            else:
+                logging.critical("unexpected file type: {}".format(download_target.type))
+                return 1
+
+            final_fp = "".join((str(final_base.parent / final_base.stem),
+                                "-output",
+                                final_base.suffix
+                                ))
+            logging.debug("Renaming file: {}".format(final_fp))
+            os.rename(final_base, final_fp)
 
         logging.info("CLEANUP:")
         if audio_fp:
-            logging.info("CLEANUP: deleting video file")
-            # check for errors
-            errors = os.remove(video_fp)
-            if not errors:
-                logging.info("Success!")
-            else:
-                logging.error("Error code detected: {}".format(errors))
+            if video_fp:
+                logging.info("CLEANUP: deleting video file: {}".format(video_fp))
+                # check for errors
+                errors = os.remove(video_fp)
+                if not errors:
+                    logging.info("Success!")
+                else:
+                    logging.error("Error code detected: {}".format(errors))
 
-            logging.info("CLEANUP: deleting audio file")
-            # check for errors
-            errors = os.remove(audio_fp)
-            if not errors:
-                logging.info("Success!")
-            else:
-                logging.error("Error code detected: {}".format(errors))
-        else:
-            final_fp = "".join((str(video_fp.parent / video_fp.stem),
-                                "-output",
-                                video_fp.suffix
-                                ))
-            os.rename(video_fp, final_fp)
+                logging.info("CLEANUP: deleting audio file: {}".format(audio_fp))
+                # check for errors
+                errors = os.remove(audio_fp)
+                if not errors:
+                    logging.info("Success!")
+                else:
+                    logging.error("Error code detected: {}".format(errors))
+
         logging.info("Final output file: {}".format(final_fp))
 
     print("All done!")
