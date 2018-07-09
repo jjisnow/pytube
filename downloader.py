@@ -1,30 +1,49 @@
+""" Downloader of video website links
+
+Usage:
+  downloader.py [URL...] [--verbose | --quiet]
+
+Arguments:
+  URL   individual websites to download video from
+
+Options:
+  -h, --help     Show this screen
+  -v, --verbose  Show verbose output
+  -q, --quiet    Run quietly
+
+"""
+
 import os
+import sys
 
 from pySmartDL import SmartDL
-
+import time
 from pytube import YouTube
-import sys
 from pprint import pprint
 import subprocess
 from pathlib import Path
 import logging
+from docopt import docopt
 
-logging.basicConfig(level=logging.DEBUG)
 
-
-def downloader(*args, **kwargs):
-    # Use a provided link or the args provided
-    if len(sys.argv) == 1:
-        link = input("Provide a youtube link to download: ")
-
-        args = [sys.argv[0], link]
+def downloader():
+    arguments = docopt(__doc__, help=True)
+    if arguments['--verbose']:
+        logging.basicConfig(level=logging.DEBUG)
+    elif arguments['--quiet']:
+        logging.basicConfig(level=logging.NOTSET)
     else:
-        args = sys.argv
+        logging.basicConfig(level=logging.INFO)
 
-    print(args)
+    # Use a provided link or the args provided
+    if len(arguments['URL']) == 0:
+        link = input("Provide a youtube link to download: ")
+        arguments['URL'].append(link)
+    logging.info("Final args: {}".format(arguments))
 
-    # download each file
-    for file in args[1:]:
+    start_time = time.time()
+    for file in arguments['URL']:
+        logging.debug("Parsing url: {}".format(file))
         yt = YouTube(file)
         pprint(yt.streams.all())
         while True:
@@ -36,6 +55,8 @@ def downloader(*args, **kwargs):
 
         download_target = yt.streams.get_by_itag(itag)
 
+        logging.info("DOWNLOADING:")
+        audio_fp = None
         if not download_target.includes_audio_track:
             logging.info("downloading video first......")
             logging.debug("current directory: {}".format(Path.cwd()))
@@ -72,15 +93,16 @@ def downloader(*args, **kwargs):
             logging.info("downloading VIDEO ONLY")
             video_fp = download_file(download_target)
 
-        logging.info("CLEANUP: deleting video file")
-        # check for errors
-        errors = os.remove(video_fp)
-        if not errors:
-            logging.info("Success!")
-        else:
-            logging.error("Error code detected: {}".format(errors))
-
+        logging.info("CLEANUP:")
         if audio_fp:
+            logging.info("CLEANUP: deleting video file")
+            # check for errors
+            errors = os.remove(video_fp)
+            if not errors:
+                logging.info("Success!")
+            else:
+                logging.error("Error code detected: {}".format(errors))
+
             logging.info("CLEANUP: deleting audio file")
             # check for errors
             errors = os.remove(audio_fp)
@@ -88,8 +110,16 @@ def downloader(*args, **kwargs):
                 logging.info("Success!")
             else:
                 logging.error("Error code detected: {}".format(errors))
+        else:
+            final_fp = "".join((str(video_fp.parent / video_fp.stem),
+                                "-output",
+                                video_fp.suffix
+                                ))
+            os.rename(video_fp, final_fp)
+        logging.info("Final output file: {}".format(final_fp))
 
     print("All done!")
+    print("--- {:.2f} seconds ---".format(time.time() - start_time))
 
 
 def download_file(download_target):
@@ -98,13 +128,14 @@ def download_file(download_target):
     fp = Path.cwd() / Path(download_target.default_filename)
     # add '-audio' suffix if audio file
     if download_target.type == 'audio':
-        fp = str(fp.parent / fp.stem) \
-             + "-audio" \
-             + Path(download_target.default_filename).suffix
+        fp = ''.join((str(fp.parent / fp.stem),
+                      "-audio",
+                      Path(download_target.default_filename).suffix
+                      ))
     logging.debug("Targeting destination: {}".format(fp))
 
     # download the file
-    obj = SmartDL(download_target.url, str(fp), threads=5)
+    obj = SmartDL(download_target.url, str(fp), threads=5, progress_bar=False)
     obj.start(blocking=False)
     while not obj.isFinished():
         logging.info("Speed: %s" % obj.get_speed(human=True))
@@ -122,8 +153,4 @@ def download_file(download_target):
 
 
 if __name__ == '__main__':
-    import time
-
-    start_time = time.time()
     downloader()
-    print("--- {:.2f} seconds ---".format(time.time() - start_time))
