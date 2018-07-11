@@ -27,12 +27,17 @@ import subprocess
 from pathlib import Path
 import logging
 from docopt import docopt
+from tabulate import tabulate
+
 
 def parse_streams(streams):
     # take yt.streams.all() and parse into a list of dictionaries
+
+    # print("{} {} {} {} {} {}".format('itag', 'res', 'mime_type', 'acodec', 'vcodec',
+    #                                  'abr'))
     final_list = []
     for stream in streams:
-        stream = str(stream).strip('<>').replace('Stream: ','').split(' ')
+        stream = str(stream).strip('<>').replace('Stream: ', '').split(' ')
         stream_dict = {}
         for item in stream:
             a = item.split('=')
@@ -40,7 +45,17 @@ def parse_streams(streams):
             v = a[1].strip('"')
             stream_dict[k] = v
         final_list.append(stream_dict)
-    return final_list
+        # print("{} {} {} {} {} {}".format(
+        #     stream_dict.get('itag', 'None'),
+        #     stream_dict.get('res', 'None'),
+        #     stream_dict.get('mime_type', 'None'),
+        #     stream_dict.get('acodec', 'None'),
+        #     stream_dict.get('vcodec', 'None'),
+        #     stream_dict.get('abr', 'None')
+        #     ))
+
+    print(tabulate(final_list, headers = "keys"))
+
 
 def downloader():
     arguments = docopt(__doc__, help=True)
@@ -64,8 +79,8 @@ def downloader():
     for file in arguments['URL']:
         logging.debug("Parsing url: {}".format(file))
         yt = YouTube(file)
-        pprint(yt.streams.all())
-        pprint(parse_streams(yt.streams.all()))
+        # pprint(yt.streams.all())
+        parse_streams(yt.streams.all())
 
         while True:
             if arguments['--itag']:
