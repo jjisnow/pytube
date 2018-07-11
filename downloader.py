@@ -31,10 +31,8 @@ from tabulate import tabulate
 
 
 def parse_streams(streams):
-    # take yt.streams.all() and parse into a list of dictionaries
+    # take yt.streams.all() and parse into a list of dictionaries for presentation
 
-    # print("{} {} {} {} {} {}".format('itag', 'res', 'mime_type', 'acodec', 'vcodec',
-    #                                  'abr'))
     final_list = []
     for stream in streams:
         stream = str(stream).strip('<>').replace('Stream: ', '').split(' ')
@@ -45,14 +43,6 @@ def parse_streams(streams):
             v = a[1].strip('"')
             stream_dict[k] = v
         final_list.append(stream_dict)
-        # print("{} {} {} {} {} {}".format(
-        #     stream_dict.get('itag', 'None'),
-        #     stream_dict.get('res', 'None'),
-        #     stream_dict.get('mime_type', 'None'),
-        #     stream_dict.get('acodec', 'None'),
-        #     stream_dict.get('vcodec', 'None'),
-        #     stream_dict.get('abr', 'None')
-        #     ))
 
     print(tabulate(final_list, headers = "keys"))
 
@@ -79,7 +69,6 @@ def downloader():
     for file in arguments['URL']:
         logging.debug("Parsing url: {}".format(file))
         yt = YouTube(file)
-        # pprint(yt.streams.all())
         parse_streams(yt.streams.all())
 
         while True:
@@ -200,7 +189,8 @@ def config_loggers(arguments, log_level):
 
 
 def download_file(download_target):
-    logging.info("Downloading url: {}".format(download_target.url))
+    logging.info("Downloading itag: {}".format(download_target.itag))
+    logging.info("Download url: {}".format(download_target.url))
 
     fp = Path.cwd() / Path(download_target.default_filename)
     # add '-audio' suffix if audio file
