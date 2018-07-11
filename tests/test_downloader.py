@@ -9,9 +9,15 @@ import pytest
 @pytest.fixture
 def base_command():
     # uses a short 30s wildlife clip
+    url = "https://www.youtube.com/watch?v=5DP5I8Gd6wY"
+
+    # youtube close caption demo
+    # TODO: reference size of videos downloaded for tests
+    # url = "https://www.youtube.com/watch?v=QRS8MkLhQmM"
+
     command = " ".join(("python",
-                        "downloader.py",
-                        "https://www.youtube.com/watch?v=5DP5I8Gd6wY",
+                        "..\downloader.py",
+                        url,
                         "-v",
                         "-i"
                         ))

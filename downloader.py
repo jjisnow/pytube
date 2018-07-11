@@ -22,11 +22,28 @@ import sys
 from pySmartDL import SmartDL
 import time
 from pytube import YouTube
-from pprint import pprint
 import subprocess
 from pathlib import Path
 import logging
 from docopt import docopt
+from tabulate import tabulate
+
+
+def parse_streams(streams):
+    # take yt.streams.all() and parse into a list of dictionaries for presentation
+
+    final_list = []
+    for stream in streams:
+        stream = str(stream).strip('<>').replace('Stream: ', '').split(' ')
+        stream_dict = {}
+        for item in stream:
+            a = item.split('=')
+            k = a[0]
+            v = a[1].strip('"')
+            stream_dict[k] = v
+        final_list.append(stream_dict)
+
+    print(tabulate(final_list, headers="keys"))
 
 
 def downloader():
@@ -51,7 +68,8 @@ def downloader():
     for file in arguments['URL']:
         logging.debug("Parsing url: {}".format(file))
         yt = YouTube(file)
-        pprint(yt.streams.all())
+        parse_streams(yt.streams.all())
+
         while True:
             if arguments['--itag']:
                 itag = arguments['--itag']
@@ -170,7 +188,8 @@ def config_loggers(arguments, log_level):
 
 
 def download_file(download_target):
-    logging.info("Downloading url: {}".format(download_target.url))
+    logging.info("Downloading itag: {}".format(download_target.itag))
+    logging.info("Download url: {}".format(download_target.url))
 
     fp = Path.cwd() / Path(download_target.default_filename)
     # add '-audio' suffix if audio file
