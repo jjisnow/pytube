@@ -28,6 +28,19 @@ from pathlib import Path
 import logging
 from docopt import docopt
 
+def parse_streams(streams):
+    # take yt.streams.all() and parse into a list of dictionaries
+    final_list = []
+    for stream in streams:
+        stream = str(stream).strip('<>').replace('Stream: ','').split(' ')
+        stream_dict = {}
+        for item in stream:
+            a = item.split('=')
+            k = a[0]
+            v = a[1].strip('"')
+            stream_dict[k] = v
+        final_list.append(stream_dict)
+    return final_list
 
 def downloader():
     arguments = docopt(__doc__, help=True)
@@ -52,6 +65,8 @@ def downloader():
         logging.debug("Parsing url: {}".format(file))
         yt = YouTube(file)
         pprint(yt.streams.all())
+        pprint(parse_streams(yt.streams.all()))
+
         while True:
             if arguments['--itag']:
                 itag = arguments['--itag']
