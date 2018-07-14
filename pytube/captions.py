@@ -57,14 +57,24 @@ class Caption:
         """
         segments = []
         root = ElementTree.fromstring(xml_captions)
-        for i, child in enumerate(root.getchildren()):
+        element_tuple = tuple(enumerate(root.getchildren()))
+        for i, child in element_tuple:
             text = child.text or ''
             caption = unescape(
                 text
-                .replace('\n', ' ')
-                .replace('  ', ' '),
+                    .replace('\n', ' ')
+                    .replace('  ', ' '),
             )
-            duration = float(child.attrib['dur'])
+
+            if 'dur' in child.attrib:
+                if i < len(element_tuple) - 1:
+                    duration = float(child.attrib['dur'])
+            else:
+                if i < len(element_tuple) - 1:
+                    duration = float(element_tuple[i+1][1].attrib['start']) - float(child.attrib['start'])
+                else:
+                    duration = float(0)
+
             start = float(child.attrib['start'])
             end = start + duration
             sequence_number = i + 1  # convert from 0-indexed to 1.
@@ -81,4 +91,4 @@ class Caption:
 
     def __repr__(self):
         """Printable object representation."""
-        return'<Caption lang="{s.name}" code="{s.code}">'.format(s=self)
+        return '<Caption lang="{s.name}" code="{s.code}">'.format(s=self)
