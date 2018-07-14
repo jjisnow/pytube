@@ -71,45 +71,27 @@ def downloader():
         parse_streams(yt.streams.all())
 
         itag = get_itag(arguments)
-
         download_target = yt.streams.get_by_itag(itag)
 
         logging.info("DOWNLOADING:")
         video_fp = None
         audio_fp = None
+        subt_fp = None
         # note this 'includes_audio_track' only applies to video with audio included
         if not download_target.includes_audio_track:
             logging.info("downloading video first......")
             logging.debug("current directory: {}".format(Path.cwd()))
             video_fp = download_file(download_target)
-
+            videofps = download_target.fps
             # then the first audio stream
             logging.info("downloading audio as well!")
 
             download_target = yt.streams.filter(only_audio=True).first()
             audio_fp = download_file(download_target)
 
-            # mix audio as well afterwards
-            logging.info("attempting to mix audio and video")
-            # -y: global ie overwrite without asking
-            # -i: input file
-            # -r: set frame rate in fps
-            # -filter:a create filtergraph
-            # -c:a copy means copy audio streams
-            # -c:v copy means copy video stream codec
-            # -filter:a aresample=async=1 means resample audio to fit frame rates
-            final_fp = str(video_fp.parent / video_fp.stem) + "-output.mkv"
-            cmd = \
-                'ffmpeg -y -i "{}"  -r {} -i "{}"  -c:a copy -c:v copy "{}"'.format(
-                    audio_fp,
-                    download_target.fps,
-                    video_fp,
-                    final_fp
-                )
-            logging.debug("Command to be run: {}".format(cmd))
-            subprocess.run(cmd, shell=True)
-            logging.info("Final muxed file: {}".format(final_fp))
-            logging.info('Muxing Done')
+            # consider downloading subtitles
+
+            final_fp = mux_files(audio_fp, subt_fp, video_fp, videofps)
         else:
             logging.info("downloading {} ONLY".format(download_target.type))
             if download_target.type == 'video':
@@ -153,6 +135,28 @@ def downloader():
     print("All done!")
     print("--- {:.2f} seconds ---".format(time.time() - start_time))
 
+
+def mux_files(audio_fp, subt_fp, video_fp, videofps):
+
+    # mix audio as well afterwards
+    logging.info("attempting to mix audio and video")
+    # -y: global ie overwrite without asking
+    # -i: input file
+    # -r: set frame rate in fps
+    # -filter:a create filtergraph
+    # -c:a copy means copy audio streams
+    # -c:v copy means copy video stream codec
+    # -filter:a aresample=async=1 means resample audio to fit frame rates
+    final_fp = str(video_fp.parent / video_fp.stem) + "-output.mkv"
+    subt_fp = '' if subt_fp is None else f'-i "{subt_fp}"'
+    subt_text = '-c:s srt' if subt_fp else ''
+    
+    cmd = f'ffmpeg -y -i "{audio_fp}" -r {videofps} -i "{video_fp}" {subt_fp} -c:a copy -c:v copy {subt_text} "{final_fp}"'
+    logging.debug("Command to be run: {}".format(cmd))
+    subprocess.run(cmd, shell=True)
+    logging.info("Final muxed file: {}".format(final_fp))
+    logging.info('Muxing Done')
+    return final_fp
 
 def get_itag(arguments):
     while True:
