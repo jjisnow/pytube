@@ -70,15 +70,7 @@ def downloader():
         yt = YouTube(file)
         parse_streams(yt.streams.all())
 
-        while True:
-            if arguments['--itag']:
-                itag = arguments['--itag']
-                break
-            try:
-                itag = int(input("Which stream do you want? (specify itag): "))
-                break
-            except ValueError:
-                logging.error("you need to provide a number!")
+        itag = get_itag(arguments)
 
         download_target = yt.streams.get_by_itag(itag)
 
@@ -160,6 +152,19 @@ def downloader():
 
     print("All done!")
     print("--- {:.2f} seconds ---".format(time.time() - start_time))
+
+
+def get_itag(arguments):
+    while True:
+        if arguments['--itag']:
+            itag = arguments['--itag']
+            break
+        try:
+            itag = int(input("Which stream do you want? (specify itag): "))
+            break
+        except ValueError:
+            logging.error("you need to provide a number!")
+    return itag
 
 
 def config_loggers(arguments, log_level):
