@@ -88,8 +88,6 @@ def mux_files(audio_fp, subt_fp, video_fp, videofps):
     subt_text = '-c:s srt' if subt_fp else ''
 
     cmd = f'ffmpeg -y -i "{audio_fp}" -r {videofps} -i "{video_fp}" {subt_fp} -c:a copy ' \
-          f'' \
-          f'' \
           f'-c:v copy {subt_text} "{final_fp}"'
     logging.debug("Command to be run: {}".format(cmd))
     subprocess.run(cmd, shell=True)
@@ -171,28 +169,11 @@ def downloader():
     ''' main interface for downloader file
     '''
 
-    arguments = docopt(__doc__, help=True)
-    if arguments['--verbose']:
-        log_level = logging.DEBUG
-    elif arguments['--quiet']:
-        log_level = logging.CRITICAL
-    else:
-        log_level = logging.INFO
-
-    # Decide on subtitles to use
-    if arguments['--lang']:
-        lang = arguments['--lang']
-    else:
-        arguments['--lang'] = lang = 'English'
+    arguments, lang, log_level = parse_arguments()
 
     config_loggers(arguments, log_level)
 
-    # Use a provided link or the args provided
-    if len(arguments['URL']) == 0:
-        link = input("Provide a youtube link to download: ")
-        arguments['URL'].append(link)
 
-    logging.info("Final args: {}".format(arguments))
 
     start_time = time.time()
     for file in arguments['URL']:
@@ -265,6 +246,28 @@ def downloader():
 
     print("All done!")
     print("--- {:.2f} seconds ---".format(time.time() - start_time))
+
+
+def parse_arguments():
+    arguments = docopt(__doc__, help=True)
+    if arguments['--verbose']:
+        log_level = logging.DEBUG
+    elif arguments['--quiet']:
+        log_level = logging.CRITICAL
+    else:
+        log_level = logging.INFO
+    # Decide on subtitles to use
+    if arguments['--lang']:
+        lang = arguments['--lang']
+    else:
+        arguments['--lang'] = lang = 'English'
+    # Use a provided link or the args provided
+    if len(arguments['URL']) == 0:
+        link = input("Provide a youtube link to download: ")
+        arguments['URL'].append(link)
+
+    logging.info("Final args: {}".format(arguments))
+    return arguments, lang, log_level
 
 
 if __name__ == '__main__':
