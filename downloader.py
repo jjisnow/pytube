@@ -259,13 +259,10 @@ def parse_arguments():
         log_level = logging.CRITICAL
     else:
         log_level = logging.INFO
-    # Decide on subtitles to use
-    if arguments['--lang']:
-        lang = arguments['--lang']
-    else:
-        arguments['--lang'] = lang = 'English'
+    if not arguments['--lang']:
+        arguments['--lang'] = 'English'
 
-    return arguments, lang, log_level
+    return arguments, log_level
 
 
 def check_url(arguments):
