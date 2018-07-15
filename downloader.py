@@ -72,7 +72,7 @@ def download_captions(yt, lang):
         return subt_fp
 
 
-def mux_files(audio_fp, subt_fp, video_fp, videofps):
+def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
     # mix audio as well afterwards
     logging.info("attempting to mix audio and video")
     # -y: global ie overwrite without asking
@@ -83,11 +83,22 @@ def mux_files(audio_fp, subt_fp, video_fp, videofps):
     # -c:v copy means copy video stream codec
     # -c:s srt means copy subtitles as srt
     # -filter:a aresample=async=1 means resample audio to fit frame rates
-    final_fp = str(video_fp.parent / video_fp.stem) + "-output.mkv"
+    if video_fp:
+        final_fp = video_fp
+    elif audio_fp:
+        final_fp = audio_fp
+    else:
+        logging.error("")
+
+    final_fp = Path(str(final_fp.parent / final_fp.stem) + ".mkv")
+    audio_fp_text = f'-i "{audio_fp}"' if audio_fp else ''
+    videofps_text = f'-r {videofps}' if videofps else ''
+    video_fp_text = f'-i "{video_fp}"' if video_fp else ''
     subt_fp = '' if subt_fp is None else f'-i "{subt_fp}"'
     subt_text = '-c:s srt' if subt_fp else ''
 
-    cmd = f'ffmpeg -y -i "{audio_fp}" -r {videofps} -i "{video_fp}" {subt_fp} -c:a copy ' \
+    cmd = f'ffmpeg -y {audio_fp_text} {videofps_text} {video_fp_text} {subt_fp} -c:a ' \
+          f'copy ' \
           f'-c:v copy {subt_text} "{final_fp}"'
     logging.debug("Command to be run: {}".format(cmd))
     subprocess.run(cmd, shell=True)
@@ -165,15 +176,37 @@ def download_file(download_target):
     return fp
 
 
+def parse_arguments():
+    arguments = docopt(__doc__, help=True)
+    if arguments['--verbose']:
+        log_level = logging.DEBUG
+    elif arguments['--quiet']:
+        log_level = logging.CRITICAL
+    else:
+        log_level = logging.INFO
+    # Decide on subtitles to use
+    if arguments['--lang']:
+        lang = arguments['--lang']
+    else:
+        arguments['--lang'] = lang = 'English'
+
+
+    return arguments, lang, log_level
+
+
 def downloader():
     ''' main interface for downloader file
     '''
 
     arguments, lang, log_level = parse_arguments()
-
     config_loggers(arguments, log_level)
 
+    # Use a provided link or the args provided
+    if len(arguments['URL']) == 0:
+        link = input("Provide a youtube link to download: ")
+        arguments['URL'].append(link)
 
+    logging.info("Final args: {}".format(arguments))
 
     start_time = time.time()
     for file in arguments['URL']:
@@ -185,40 +218,43 @@ def downloader():
         download_target = yt.streams.get_by_itag(itag)
 
         logging.info("DOWNLOADING:")
-        video_fp = None
-        audio_fp = None
-        subt_fp = None
+        video_path = None
+        audio_path = None
+        subtitle_path = None
+        videofps = None
         # note this 'includes_audio_track' only applies to video with audio included
         if not download_target.includes_audio_track:
             logging.info("downloading video first......")
             logging.debug("current directory: {}".format(Path.cwd()))
-            video_fp = download_file(download_target)
+            video_path = download_file(download_target)
             videofps = download_target.fps
+
             # then the first audio stream
             logging.info("downloading audio as well!")
-
             audio_target = yt.streams.filter(only_audio=True).first()
-            audio_fp = download_file(audio_target)
+            audio_path = download_file(audio_target)
 
             # consider downloading subtitles
-            subt_fp = download_captions(yt, lang)
+            subtitle_path = download_captions(yt, lang)
 
-            final_fp = mux_files(audio_fp, subt_fp, video_fp, videofps)
+            final_fp = mux_files(audio_path, subtitle_path, video_path, videofps)
         else:
             logging.info("downloading {} ONLY".format(download_target.type))
             if download_target.type == 'video':
-                video_fp = download_file(download_target)
-                final_base = video_fp
-                video_fp = None
+                video_path = download_file(download_target)
+                videofps = download_target.fps
+                subtitle_path = download_captions(yt, lang)
+                final_base = mux_files(audio_path, subtitle_path, video_path, videofps)
+
             elif download_target.type == 'audio':
                 audio_target = download_target
-                audio_fp = download_file(audio_target)
-                final_base = audio_fp
-                audio_fp = None
+                audio_path = download_file(audio_target)
+                subtitle_path = download_captions(yt, lang)
+                final_base = mux_files(audio_path, subtitle_path, video_path, videofps)
+
             else:
                 logging.critical("unexpected file type: {}".format(download_target.type))
                 return 1
-            # final_fp = mux_files(audio_fp, subt_fp, video_fp, videofps)
 
             final_fp = "".join((str(final_base.parent / final_base.stem),
                                 "-output",
@@ -228,9 +264,9 @@ def downloader():
             shutil.move(final_base, final_fp)
 
         logging.info("CLEANUP:")
-        for k, v in {'audio'    : audio_fp,
-                     'video'    : video_fp,
-                     'subtitles': subt_fp}.items():
+        for k, v in {'audio'    : audio_path,
+                     'video'    : video_path,
+                     'subtitles': subtitle_path}.items():
             if v:
                 logging.info("CLEANUP: deleting {} file: {}".format(k, v))
                 # check for errors
@@ -246,28 +282,6 @@ def downloader():
 
     print("All done!")
     print("--- {:.2f} seconds ---".format(time.time() - start_time))
-
-
-def parse_arguments():
-    arguments = docopt(__doc__, help=True)
-    if arguments['--verbose']:
-        log_level = logging.DEBUG
-    elif arguments['--quiet']:
-        log_level = logging.CRITICAL
-    else:
-        log_level = logging.INFO
-    # Decide on subtitles to use
-    if arguments['--lang']:
-        lang = arguments['--lang']
-    else:
-        arguments['--lang'] = lang = 'English'
-    # Use a provided link or the args provided
-    if len(arguments['URL']) == 0:
-        link = input("Provide a youtube link to download: ")
-        arguments['URL'].append(link)
-
-    logging.info("Final args: {}".format(arguments))
-    return arguments, lang, log_level
 
 
 if __name__ == '__main__':
