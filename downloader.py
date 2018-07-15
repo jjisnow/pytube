@@ -48,105 +48,6 @@ def parse_streams(streams):
     print(tabulate(final_list, headers="keys"))
 
 
-def downloader():
-    ''' main interface for downloader file
-    '''
-
-    arguments = docopt(__doc__, help=True)
-    if arguments['--verbose']:
-        log_level = logging.DEBUG
-    elif arguments['--quiet']:
-        log_level = logging.CRITICAL
-    else:
-        log_level = logging.INFO
-
-    # Decide on subtitles to use
-    if arguments['--lang']:
-        lang = arguments['--lang']
-    else:
-        arguments['--lang'] = lang = 'English'
-
-    config_loggers(arguments, log_level)
-
-    # Use a provided link or the args provided
-    if len(arguments['URL']) == 0:
-        link = input("Provide a youtube link to download: ")
-        arguments['URL'].append(link)
-
-    logging.info("Final args: {}".format(arguments))
-
-    start_time = time.time()
-    for file in arguments['URL']:
-        logging.debug("Parsing url: {}".format(file))
-        yt = YouTube(file)
-        parse_streams(yt.streams.all())
-
-        itag = get_itag(arguments)
-        download_target = yt.streams.get_by_itag(itag)
-
-        logging.info("DOWNLOADING:")
-        video_fp = None
-        audio_fp = None
-        subt_fp = None
-        # note this 'includes_audio_track' only applies to video with audio included
-        if not download_target.includes_audio_track:
-            logging.info("downloading video first......")
-            logging.debug("current directory: {}".format(Path.cwd()))
-            video_fp = download_file(download_target)
-            videofps = download_target.fps
-            # then the first audio stream
-            logging.info("downloading audio as well!")
-
-            audio_target = yt.streams.filter(only_audio=True).first()
-            audio_fp = download_file(audio_target)
-
-            # consider downloading subtitles
-            subt_fp = download_captions(yt, lang)
-
-            final_fp = mux_files(audio_fp, subt_fp, video_fp, videofps)
-        else:
-            logging.info("downloading {} ONLY".format(download_target.type))
-            if download_target.type == 'video':
-                video_fp = download_file(download_target)
-                final_base = video_fp
-                video_fp = None
-            elif download_target.type == 'audio':
-                audio_target = download_target
-                audio_fp = download_file(audio_target)
-                final_base = audio_fp
-                audio_fp = None
-            else:
-                logging.critical("unexpected file type: {}".format(download_target.type))
-                return 1
-
-            final_fp = "".join((str(final_base.parent / final_base.stem),
-                                "-output",
-                                final_base.suffix
-                                ))
-            logging.debug("Renaming file: {}".format(final_fp))
-            shutil.move(final_base, final_fp)
-
-        logging.info("CLEANUP:")
-        for k, v in {'audio'    : audio_fp,
-                     'video'    : video_fp,
-                     'subtitles': subt_fp}.items():
-            if v:
-                logging.info("CLEANUP: deleting {} file: {}".format(k, v))
-                # check for errors
-                errors = os.remove(v)
-                if not errors:
-                    logging.info("Success!")
-                else:
-                    logging.error("Error code detected: {}".format(errors))
-            else:
-                logging.debug('CLEANUP: no {} file detected'.format(k))
-
-        logging.info("Final output file: {}".format(final_fp))
-
-    print("All done!")
-    print("--- {:.2f} seconds ---".format(time.time() - start_time))
-
-
 def download_captions(yt, lang):
     i = None
     captions = list(enumerate(yt.captions.all()))
@@ -187,6 +88,7 @@ def mux_files(audio_fp, subt_fp, video_fp, videofps):
     subt_text = '-c:s srt' if subt_fp else ''
 
     cmd = f'ffmpeg -y -i "{audio_fp}" -r {videofps} -i "{video_fp}" {subt_fp} -c:a copy ' \
+          f'' \
           f'' \
           f'-c:v copy {subt_text} "{final_fp}"'
     logging.debug("Command to be run: {}".format(cmd))
@@ -263,6 +165,106 @@ def download_file(download_target):
 
     logging.info("Final {} file: {}".format(download_target.type, fp))
     return fp
+
+
+def downloader():
+    ''' main interface for downloader file
+    '''
+
+    arguments = docopt(__doc__, help=True)
+    if arguments['--verbose']:
+        log_level = logging.DEBUG
+    elif arguments['--quiet']:
+        log_level = logging.CRITICAL
+    else:
+        log_level = logging.INFO
+
+    # Decide on subtitles to use
+    if arguments['--lang']:
+        lang = arguments['--lang']
+    else:
+        arguments['--lang'] = lang = 'English'
+
+    config_loggers(arguments, log_level)
+
+    # Use a provided link or the args provided
+    if len(arguments['URL']) == 0:
+        link = input("Provide a youtube link to download: ")
+        arguments['URL'].append(link)
+
+    logging.info("Final args: {}".format(arguments))
+
+    start_time = time.time()
+    for file in arguments['URL']:
+        logging.debug("Parsing url: {}".format(file))
+        yt = YouTube(file)
+        parse_streams(yt.streams.all())
+
+        itag = get_itag(arguments)
+        download_target = yt.streams.get_by_itag(itag)
+
+        logging.info("DOWNLOADING:")
+        video_fp = None
+        audio_fp = None
+        subt_fp = None
+        # note this 'includes_audio_track' only applies to video with audio included
+        if not download_target.includes_audio_track:
+            logging.info("downloading video first......")
+            logging.debug("current directory: {}".format(Path.cwd()))
+            video_fp = download_file(download_target)
+            videofps = download_target.fps
+            # then the first audio stream
+            logging.info("downloading audio as well!")
+
+            audio_target = yt.streams.filter(only_audio=True).first()
+            audio_fp = download_file(audio_target)
+
+            # consider downloading subtitles
+            subt_fp = download_captions(yt, lang)
+
+            final_fp = mux_files(audio_fp, subt_fp, video_fp, videofps)
+        else:
+            logging.info("downloading {} ONLY".format(download_target.type))
+            if download_target.type == 'video':
+                video_fp = download_file(download_target)
+                final_base = video_fp
+                video_fp = None
+            elif download_target.type == 'audio':
+                audio_target = download_target
+                audio_fp = download_file(audio_target)
+                final_base = audio_fp
+                audio_fp = None
+            else:
+                logging.critical("unexpected file type: {}".format(download_target.type))
+                return 1
+            # final_fp = mux_files(audio_fp, subt_fp, video_fp, videofps)
+
+            final_fp = "".join((str(final_base.parent / final_base.stem),
+                                "-output",
+                                final_base.suffix
+                                ))
+            logging.debug("Renaming file: {}".format(final_fp))
+            shutil.move(final_base, final_fp)
+
+        logging.info("CLEANUP:")
+        for k, v in {'audio'    : audio_fp,
+                     'video'    : video_fp,
+                     'subtitles': subt_fp}.items():
+            if v:
+                logging.info("CLEANUP: deleting {} file: {}".format(k, v))
+                # check for errors
+                errors = os.remove(v)
+                if not errors:
+                    logging.info("Success!")
+                else:
+                    logging.error("Error code detected: {}".format(errors))
+            else:
+                logging.debug('CLEANUP: no {} file detected'.format(k))
+
+        logging.info("Final output file: {}".format(final_fp))
+
+    print("All done!")
+    print("--- {:.2f} seconds ---".format(time.time() - start_time))
 
 
 if __name__ == '__main__':
