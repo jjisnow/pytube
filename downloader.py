@@ -50,8 +50,7 @@ def downloader():
         download_target = yt.streams.get_by_itag(itag)
 
         logging.info("DOWNLOADING:")
-        video_path, audio_path, subtitle_path, videofps = None
-        # note this 'includes_audio_track' only applies to video with audio included
+        video_path, audio_path, subtitle_path, videofps = [None] * 4
         if not download_target.includes_audio_track:
             logging.info("downloading video first......")
             logging.debug("current directory: {}".format(Path.cwd()))
