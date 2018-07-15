@@ -2,7 +2,7 @@
 Will download video and mux with audio, or audio only, or video with audio already
 
 Usage:
-  downloader.py [URL...] [--verbose | --quiet] [--itag value] [--lang string]
+  downloader.py [URL...] [--verbose | --quiet] [--itag value] [--lang string] [--list]
 
 Arguments:
   URL   individual websites to download video from
@@ -12,7 +12,8 @@ Options:
   -v, --verbose       Show verbose output
   -q, --quiet         Run quietly
   -i, --itag value    The stream to download
-  -l, --lang string   The caption language to download (default: English)
+  --lang string       The caption language to download (default: English)
+  -l, --list          List streams and exit
 
 """
 
@@ -45,6 +46,8 @@ def downloader():
         logging.debug("Parsing url: {}".format(file))
         yt = YouTube(file)
         parse_streams(yt.streams.all())
+        if arguments['--list']:
+            return 0
 
         itag = get_itag(arguments)
         download_target = yt.streams.get_by_itag(itag)

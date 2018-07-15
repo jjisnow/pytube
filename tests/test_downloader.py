@@ -38,6 +38,9 @@ def captions():
                         ))
     return command
 
+def test_list(base_command):
+    assert subprocess.run(base_command + " 1 -l", shell=True)
+
 
 def test_audio(base_command):
     # test for audio file only
