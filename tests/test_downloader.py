@@ -23,6 +23,7 @@ def base_command():
                         ))
     return command
 
+
 @pytest.fixture
 def captions():
     # youtube close caption demo
@@ -36,6 +37,7 @@ def captions():
                         "-i"
                         ))
     return command
+
 
 def test_audio(base_command):
     # test for audio file only
@@ -70,15 +72,15 @@ def test_video_only(base_command):
 
 
 def test_combined(base_command):
-    # test for low quality video file muxing
-    downloaded_expected = Path("Short wildlife video clip HD-output.3gpp")
+    # test for low quality video file download
+    downloaded_expected = Path("Short wildlife video clip HD-output.mkv")
     if downloaded_expected.is_file():
         os.remove(downloaded_expected)
     cmd = base_command + " 17"
     subprocess.run(cmd, shell=True)
 
     if all((downloaded_expected.is_file(),
-            downloaded_expected.stat().st_size == 289422)):
+            downloaded_expected.stat().st_size == 291297)):
         os.remove(downloaded_expected)
         assert True
     else:
@@ -100,9 +102,26 @@ def test_hq_combined(base_command):
     else:
         assert False
 
+
+def test_audio_captions(captions):
+    # test for audio file only
+    downloaded_expected = Path("YouTube Captions and Subtitles-audio-output.mkv")
+    if downloaded_expected.is_file():
+        os.remove(downloaded_expected)
+    cmd = captions + " 249"
+    subprocess.run(cmd, shell=True)
+
+    if all((downloaded_expected.is_file(),
+            downloaded_expected.stat().st_size == 550250)):
+        os.remove(downloaded_expected)
+        assert True
+    else:
+        assert False
+
+
 def test_video_only_captions(captions):
     # test for low quality video file muxing
-    downloaded_expected = Path("YouTube Captions and Subtitles.mkv")
+    downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
     if downloaded_expected.is_file():
         os.remove(downloaded_expected)
     cmd = captions + " 278"
@@ -115,7 +134,8 @@ def test_video_only_captions(captions):
     else:
         assert False
 
-def test_video_only(captions):
+
+def test_combined_captions(captions):
     # test for low quality video file muxing
     downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
     if downloaded_expected.is_file():
@@ -124,7 +144,23 @@ def test_video_only(captions):
     subprocess.run(cmd, shell=True)
 
     if all((downloaded_expected.is_file(),
-            downloaded_expected.stat().st_size == 843467)):
+            downloaded_expected.stat().st_size == 1016003)):
+        os.remove(downloaded_expected)
+        assert True
+    else:
+        assert False
+
+
+def test_hq_mux(captions):
+    # test for high quality combined video file
+    downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
+    if downloaded_expected.is_file():
+        os.remove(downloaded_expected)
+    cmd = captions + " 243"
+    subprocess.run(cmd, shell=True)
+
+    if all((downloaded_expected.is_file(),
+            downloaded_expected.stat().st_size == 4846884)):
         os.remove(downloaded_expected)
         assert True
     else:
