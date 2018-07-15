@@ -35,9 +35,8 @@ def downloader():
     ''' main interface for downloader file
     '''
 
-    arguments, lang, log_level = parse_arguments()
+    arguments, log_level = parse_arguments()
     config_loggers(arguments, log_level)
-
     arguments = check_url(arguments)
 
     start_time = time.time()
@@ -51,10 +50,7 @@ def downloader():
         download_target = yt.streams.get_by_itag(itag)
 
         logging.info("DOWNLOADING:")
-        video_path = None
-        audio_path = None
-        subtitle_path = None
-        videofps = None
+        video_path, audio_path, subtitle_path, videofps = None
         # note this 'includes_audio_track' only applies to video with audio included
         if not download_target.includes_audio_track:
             logging.info("downloading video first......")
@@ -80,12 +76,9 @@ def downloader():
                 logging.critical("unexpected file type: {}".format(download_target.type))
                 return 1
 
-        subtitle_path = download_captions(yt, lang)
-
+        subtitle_path = download_captions(yt, arguments['--lang'])
         final_fp = mux_files(audio_path, subtitle_path, video_path, videofps)
-
         cleanup_files(audio_path, subtitle_path, video_path)
-
         logging.info("Final output file: {}".format(final_fp))
 
     print("All done!")
