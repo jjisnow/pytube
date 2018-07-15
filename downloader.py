@@ -109,10 +109,12 @@ def downloader():
             if download_target.type == 'video':
                 video_fp = download_file(download_target)
                 final_base = video_fp
+                video_fp = None
             elif download_target.type == 'audio':
                 audio_target = download_target
                 audio_fp = download_file(audio_target)
                 final_base = audio_fp
+                audio_fp = None
             else:
                 logging.critical("unexpected file type: {}".format(download_target.type))
                 return 1
