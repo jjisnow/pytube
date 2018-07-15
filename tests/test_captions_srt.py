@@ -40,3 +40,21 @@ def test_nocaptions():
         assert True
     else:
         assert False
+
+def test_english_only_captions():
+    # A video about captions vs subtitles
+    url = "https://www.youtube.com/watch?v=xKtdlRnvwqs"
+
+    i = None
+    yt = YouTube(url)
+    captions = list(enumerate(yt.captions.all()))
+    logging.debug(f'captions available: {pformat(captions)}')
+    for index, c in captions:
+        if "English" in str(c):
+            i = index
+            break
+    if i is None:
+        logging.debug(f'No Captions found!')
+    else:
+        logging.debug(f'English captions found at i = {i}')
+    assert "English" in str(c)
