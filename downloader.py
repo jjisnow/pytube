@@ -62,58 +62,51 @@ def downloader():
             video_path = download_file(download_target)
             videofps = download_target.fps
 
-            # then the first audio stream
             logging.info("downloading audio as well!")
             audio_target = yt.streams.filter(only_audio=True).first()
             audio_path = download_file(audio_target)
 
-            # consider downloading subtitles
-            subtitle_path = download_captions(yt, lang)
-            final_base = mux_files(audio_path, subtitle_path, video_path, videofps)
         else:
             logging.info("downloading {} ONLY".format(download_target.type))
             if download_target.type == 'video':
                 video_path = download_file(download_target)
                 videofps = download_target.fps
-                subtitle_path = download_captions(yt, lang)
-                final_base = mux_files(audio_path, subtitle_path, video_path, videofps)
 
             elif download_target.type == 'audio':
                 audio_target = download_target
                 audio_path = download_file(audio_target)
-                subtitle_path = download_captions(yt, lang)
-                final_base = mux_files(audio_path, subtitle_path, video_path, videofps)
 
             else:
                 logging.critical("unexpected file type: {}".format(download_target.type))
                 return 1
 
-        final_fp = "".join((str(final_base.parent / final_base.stem),
-                            "-output",
-                            final_base.suffix
-                            ))
-        logging.debug("Renaming file: {}".format(final_fp))
-        shutil.move(final_base, final_fp)
+        subtitle_path = download_captions(yt, lang)
 
-        logging.info("CLEANUP:")
-        for k, v in {'audio'    : audio_path,
-                     'video'    : video_path,
-                     'subtitles': subtitle_path}.items():
-            if v:
-                logging.info("CLEANUP: deleting {} file: {}".format(k, v))
-                # check for errors
-                errors = os.remove(v)
-                if not errors:
-                    logging.info("Success!")
-                else:
-                    logging.error("Error code detected: {}".format(errors))
-            else:
-                logging.debug('CLEANUP: no {} file detected'.format(k))
+        final_fp = mux_files(audio_path, subtitle_path, video_path, videofps)
+
+        cleanup_files(audio_path, subtitle_path, video_path)
 
         logging.info("Final output file: {}".format(final_fp))
 
     print("All done!")
     print("--- {:.2f} seconds ---".format(time.time() - start_time))
+
+
+def cleanup_files(audio_path, subtitle_path, video_path):
+    logging.info("CLEANUP:")
+    for k, v in {'audio'    : audio_path,
+                 'video'    : video_path,
+                 'subtitles': subtitle_path}.items():
+        if v:
+            logging.info("CLEANUP: deleting {} file: {}".format(k, v))
+            # check for errors
+            errors = os.remove(v)
+            if not errors:
+                logging.info("Success!")
+            else:
+                logging.error("Error code detected: {}".format(errors))
+        else:
+            logging.debug('CLEANUP: no {} file detected'.format(k))
 
 
 def parse_streams(streams):
@@ -175,7 +168,10 @@ def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
     else:
         logging.error("")
 
-    final_fp = Path(str(final_fp.parent / final_fp.stem) + ".mkv")
+    final_fp = "".join((str(final_fp.parent / final_fp.stem),
+                        "-output",
+                        ".mkv"
+                        ))
     audio_fp_text = f'-i "{audio_fp}"' if audio_fp else ''
     videofps_text = f'-r {videofps}' if videofps else ''
     video_fp_text = f'-i "{video_fp}"' if video_fp else ''
@@ -185,10 +181,11 @@ def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
     cmd = f'ffmpeg -y {audio_fp_text} {videofps_text} {video_fp_text} {subt_fp} -c:a ' \
           f'copy ' \
           f'-c:v copy {subt_text} "{final_fp}"'
+
     logging.debug("Command to be run: {}".format(cmd))
     subprocess.run(cmd, shell=True)
     logging.info("Final muxed file: {}".format(final_fp))
-    logging.info('Muxing Done')
+
     return final_fp
 
 
