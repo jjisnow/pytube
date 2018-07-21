@@ -12,7 +12,7 @@ Options:
   -v, --verbose       Show verbose output
   -q, --quiet         Run quietly
   -i, --itag value    The stream to download
-  --lang string       The caption language to download (default: English)
+  --lang string       The caption language to download [default: English]
   -l, --list          List streams and exit
 
 """
@@ -36,8 +36,8 @@ def downloader():
     ''' main interface for downloader file
     '''
 
-    arguments, log_level = parse_arguments()
-    config_loggers(arguments, log_level)
+    arguments = parse_arguments()
+    config_loggers(arguments)
     arguments = check_url(arguments)
 
     start_time = time.time()
@@ -50,32 +50,32 @@ def downloader():
             return 0
 
         itag = get_itag(arguments)
-        download_target = yt.streams.get_by_itag(itag)
+        target_stream = yt.streams.get_by_itag(itag)
 
         logging.info("DOWNLOADING:")
         video_path, audio_path, subtitle_path, videofps = [None] * 4
-        if not download_target.includes_audio_track:
+        if not target_stream.includes_audio_track:
             logging.info("downloading video first......")
             logging.debug("current directory: {}".format(Path.cwd()))
-            video_path = download_file(download_target)
-            videofps = download_target.fps
+            video_path = download_file(target_stream)
+            videofps = target_stream.fps
 
             logging.info("downloading audio as well!")
             audio_target = yt.streams.filter(only_audio=True).first()
             audio_path = download_file(audio_target)
 
         else:
-            logging.info("downloading {} ONLY".format(download_target.type))
-            if download_target.type == 'video':
-                video_path = download_file(download_target)
-                videofps = download_target.fps
+            logging.info("downloading {} ONLY".format(target_stream.type))
+            if target_stream.type == 'video':
+                video_path = download_file(target_stream)
+                videofps = target_stream.fps
 
-            elif download_target.type == 'audio':
-                audio_target = download_target
+            elif target_stream.type == 'audio':
+                audio_target = target_stream
                 audio_path = download_file(audio_target)
 
             else:
-                logging.critical("unexpected file type: {}".format(download_target.type))
+                logging.critical("unexpected file type: {}".format(target_stream.type))
                 return 1
 
         subtitle_path = download_captions(yt, arguments['--lang'])
@@ -168,14 +168,13 @@ def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
                         ".mkv"
                         ))
     audio_fp_text = f'-i "{audio_fp}"' if audio_fp else ''
-    videofps_text = f'-r {videofps}' if videofps else ''
     video_fp_text = f'-i "{video_fp}"' if video_fp else ''
     subt_fp = '' if subt_fp is None else f'-i "{subt_fp}"'
     subt_text = '-c:s srt' if subt_fp else ''
+    videofps_text = f'-r {videofps}' if videofps else ''
 
-    cmd = f'ffmpeg -y {audio_fp_text} {videofps_text} {video_fp_text} {subt_fp} -c:a ' \
-          f'copy ' \
-          f'-c:v copy {subt_text} "{final_fp}"'
+    cmd = f'ffmpeg -y {audio_fp_text} {video_fp_text} {subt_fp} {videofps_text} ' \
+          f'-c:a copy -c:v copy {subt_text} "{final_fp}"'
 
     logging.debug("Command to be run: {}".format(cmd))
     subprocess.run(cmd, shell=True)
@@ -197,7 +196,7 @@ def get_itag(arguments):
     return itag
 
 
-def config_loggers(arguments, log_level):
+def config_loggers(arguments):
     """ displays the supplied arguments to stdout before switching back to the stderr
     handler
 
@@ -206,6 +205,7 @@ def config_loggers(arguments, log_level):
     :return:
     """
 
+    log_level = arguments['log_level']
     logging.basicConfig(level=log_level)
     logger = logging.getLogger()
 
@@ -261,10 +261,12 @@ def parse_arguments():
         log_level = logging.CRITICAL
     else:
         log_level = logging.INFO
-    if not arguments['--lang']:
-        arguments['--lang'] = 'English'
+    # Invalidated by docopts defaults options
+    # if not arguments['--lang']:
+    #     arguments['--lang'] = 'English'
 
-    return arguments, log_level
+    arguments['log_level'] = log_level
+    return arguments
 
 
 def check_url(arguments):
