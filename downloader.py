@@ -163,7 +163,7 @@ def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
     else:
         logging.error("")
 
-    final_fp = "".join((str(final_fp.parent / final_fp.stem),
+    final_fp = "".join((final_fp.with_suffix(''),
                         "-output",
                         ".mkv"
                         ))
@@ -229,9 +229,9 @@ def download_file(download_target):
     fp = Path.cwd() / Path(download_target.default_filename)
     # add '-audio' suffix if audio file
     if download_target.type == 'audio':
-        fp = ''.join((str(fp.parent / fp.stem),
+        fp = ''.join((fp.with_suffix(''),
                       "-audio",
-                      Path(download_target.default_filename).suffix
+                      fp.suffix
                       ))
     logging.debug("Targeting destination: {}".format(fp))
 
