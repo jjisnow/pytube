@@ -57,22 +57,22 @@ def downloader():
         if not target_stream.includes_audio_track:
             logging.info("downloading video first......")
             logging.debug("current directory: {}".format(Path.cwd()))
-            video_path = download_file(target_stream)
+            video_path = download_stream(target_stream)
             videofps = target_stream.fps
 
             logging.info("downloading audio as well!")
             audio_target = yt.streams.filter(only_audio=True).first()
-            audio_path = download_file(audio_target)
+            audio_path = download_stream(audio_target)
 
         else:
             logging.info("downloading {} ONLY".format(target_stream.type))
             if target_stream.type == 'video':
-                video_path = download_file(target_stream)
+                video_path = download_stream(target_stream)
                 videofps = target_stream.fps
 
             elif target_stream.type == 'audio':
                 audio_target = target_stream
-                audio_path = download_file(audio_target)
+                audio_path = download_stream(audio_target)
 
             else:
                 logging.critical("unexpected file type: {}".format(target_stream.type))
@@ -222,7 +222,33 @@ def config_loggers(arguments):
     logger.addHandler(root_handler)
 
 
-def download_file(download_target):
+def parse_arguments():
+    arguments = docopt(__doc__, help=True)
+    if arguments['--verbose']:
+        log_level = logging.DEBUG
+    elif arguments['--quiet']:
+        log_level = logging.CRITICAL
+    else:
+        log_level = logging.INFO
+    # Invalidated by docopts defaults options
+    # if not arguments['--lang']:
+    #     arguments['--lang'] = 'English'
+
+    arguments['log_level'] = log_level
+    return arguments
+
+
+def check_url(arguments):
+    # Use a provided link or the args provided
+    if len(arguments['URL']) == 0:
+        link = input("Provide a youtube link to download: ")
+        arguments['URL'].append(link)
+    logging.info("Final args: {}".format(arguments))
+
+    return arguments
+
+
+def download_stream_old(download_target):
     logging.info("Downloading itag: {}".format(download_target.itag))
     logging.info("Download url: {}".format(download_target.url))
 
@@ -262,19 +288,36 @@ def download_stream(download_target):
         YouTube format identifier code.
 
     """
+    logging.info("Downloading itag: {}".format(download_target.itag))
+    logging.info("Download url: {}".format(download_target.url))
+
+    fp = Path.cwd() / Path(download_target.default_filename)
+    # add '-audio' suffix if audio file
+    if download_target.type == 'audio':
+        fp = ''.join((str(fp.parent / fp.stem),
+                      "-audio",
+                      Path(download_target.default_filename).suffix
+                      ))
+    logging.debug("Targeting destination: {}".format(fp))
+    fp = Path(fp)
     print('\n{fn} | {fs} bytes'.format(
         fn=download_target.default_filename,
         fs=download_target.filesize,
     ))
+
     try:
-        download_target.download()
+        download_target.download(output_path=fp.parent, filename=fp.stem)
         sys.stdout.write('\n')
+        return fp
     except KeyboardInterrupt:
         sys.exit()
 
+
 def get_terminal_size():
-    """Return the terminal size in rows and columns."""
-    rows, columns = os.popen('stty size', 'r').read().split()
+    """Return the terminal size in rows and columns. Updated in:
+    https://docs.python.org/3/library/shutil.html#querying-the-size-of-the-output-terminal
+    """
+    rows, columns = shutil.get_terminal_size()
     return int(rows), int(columns)
 
 
@@ -308,6 +351,7 @@ def display_progress_bar(bytes_received, filesize, ch='█', scale=0.55):
     sys.stdout.write(text)
     sys.stdout.flush()
 
+
 def on_progress(stream, chunk, file_handle, bytes_remaining):
     """On download progress callback function.
 
@@ -324,33 +368,6 @@ def on_progress(stream, chunk, file_handle, bytes_remaining):
     filesize = stream.filesize
     bytes_received = filesize - bytes_remaining
     display_progress_bar(bytes_received, filesize)
-
-
-
-def parse_arguments():
-    arguments = docopt(__doc__, help=True)
-    if arguments['--verbose']:
-        log_level = logging.DEBUG
-    elif arguments['--quiet']:
-        log_level = logging.CRITICAL
-    else:
-        log_level = logging.INFO
-    # Invalidated by docopts defaults options
-    # if not arguments['--lang']:
-    #     arguments['--lang'] = 'English'
-
-    arguments['log_level'] = log_level
-    return arguments
-
-
-def check_url(arguments):
-    # Use a provided link or the args provided
-    if len(arguments['URL']) == 0:
-        link = input("Provide a youtube link to download: ")
-        arguments['URL'].append(link)
-    logging.info("Final args: {}".format(arguments))
-
-    return arguments
 
 
 if __name__ == '__main__':
