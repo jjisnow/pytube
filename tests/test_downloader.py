@@ -16,7 +16,7 @@ def base_command():
     # url = "https://www.youtube.com/watch?v=QRS8MkLhQmM"
 
     command = " ".join(("python",
-                        "..\downloader.py",
+                        os.path.join("..", "downloader.py"),
                         url,
                         "-v",
                         "-i"
