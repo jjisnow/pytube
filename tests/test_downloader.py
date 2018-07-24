@@ -1,4 +1,5 @@
 # test files
+import math
 import os
 import subprocess
 from pathlib import Path
@@ -31,7 +32,7 @@ def captions():
     url = "https://www.youtube.com/watch?v=QRS8MkLhQmM"
 
     command = " ".join(("python",
-                        "..\downloader.py",
+                        os.path.join("..","downloader.py"),
                         url,
                         "-v",
                         "-i"
@@ -49,9 +50,9 @@ def test_audio(base_command):
         os.remove(downloaded_expected)
     cmd = base_command + " 249"
     subprocess.run(cmd, shell=True)
-
+    size_expected = 224096
     if all((downloaded_expected.is_file(),
-            downloaded_expected.stat().st_size == 224096)):
+        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
         os.remove(downloaded_expected)
         assert True
     else:
@@ -65,9 +66,9 @@ def test_video_only(base_command):
         os.remove(downloaded_expected)
     cmd = base_command + " 278"
     subprocess.run(cmd, shell=True)
-
+    size_expected = 843467
     if all((downloaded_expected.is_file(),
-            downloaded_expected.stat().st_size == 843467)):
+        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
         os.remove(downloaded_expected)
         assert True
     else:
@@ -81,9 +82,9 @@ def test_combined(base_command):
         os.remove(downloaded_expected)
     cmd = base_command + " 17"
     subprocess.run(cmd, shell=True)
-
+    size_expected = 291297
     if all((downloaded_expected.is_file(),
-            downloaded_expected.stat().st_size == 291297)):
+        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
         os.remove(downloaded_expected)
         assert True
     else:
@@ -97,9 +98,9 @@ def test_hq_combined(base_command):
         os.remove(downloaded_expected)
     cmd = base_command + " 247"
     subprocess.run(cmd, shell=True)
-
+    size_expected = 6832831
     if all((downloaded_expected.is_file(),
-            downloaded_expected.stat().st_size == 6832831)):
+        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
         os.remove(downloaded_expected)
         assert True
     else:
@@ -113,9 +114,9 @@ def test_audio_captions(captions):
         os.remove(downloaded_expected)
     cmd = captions + " 249"
     subprocess.run(cmd, shell=True)
-
+    size_expected = 550250
     if all((downloaded_expected.is_file(),
-            downloaded_expected.stat().st_size == 550250)):
+        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
         os.remove(downloaded_expected)
         assert True
     else:
@@ -129,9 +130,9 @@ def test_video_only_captions(captions):
         os.remove(downloaded_expected)
     cmd = captions + " 278"
     subprocess.run(cmd, shell=True)
-
+    size_expected = 2603339
     if all((downloaded_expected.is_file(),
-            downloaded_expected.stat().st_size == 2603339)):
+        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
         os.remove(downloaded_expected)
         assert True
     else:
@@ -145,9 +146,9 @@ def test_combined_captions(captions):
         os.remove(downloaded_expected)
     cmd = captions + " 17"
     subprocess.run(cmd, shell=True)
-
+    size_expected = 1016003
     if all((downloaded_expected.is_file(),
-            downloaded_expected.stat().st_size == 1016003)):
+        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
         os.remove(downloaded_expected)
         assert True
     else:
@@ -161,9 +162,9 @@ def test_hq_mux(captions):
         os.remove(downloaded_expected)
     cmd = captions + " 243"
     subprocess.run(cmd, shell=True)
-
+    size_expected = 4846884
     if all((downloaded_expected.is_file(),
-            downloaded_expected.stat().st_size == 4846884)):
+        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
         os.remove(downloaded_expected)
         assert True
     else:
