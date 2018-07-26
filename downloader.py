@@ -40,6 +40,9 @@ def downloader():
     config_loggers(arguments)
     arguments = check_url(arguments)
 
+    # check requirements: aria2c and ffmpeg
+    status, response = subprocess.getstatusoutput('which aria2c')
+
     start_time = time.time()
 
     for file in arguments['URL']:
