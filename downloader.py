@@ -226,29 +226,20 @@ def download_file(download_target):
     logging.info("Downloading itag: {}".format(download_target.itag))
     logging.info("Download url: {}".format(download_target.url))
 
-    fp = Path.cwd() / Path(download_target.default_filename)
+    fp = Path(download_target.default_filename)
     # add '-audio' suffix if audio file
     if download_target.type == 'audio':
-        fp = ''.join((str(fp.with_suffix('')),
+        fp = ''.join((str(fp.with_suffix('').name),
                       "-audio",
                       fp.suffix
                       ))
     logging.debug("Targeting destination: {}".format(fp))
 
     # download the file
-    obj = SmartDL(download_target.url, str(fp), threads=5, progress_bar=False)
-    obj.start(blocking=False)
-    while not obj.isFinished():
-        logging.info("Speed: %s" % obj.get_speed(human=True))
-        logging.debug("Already downloaded: %s" % obj.get_dl_size(human=True))
-        logging.info("Eta: %s" % obj.get_eta(human=True))
-        logging.debug("Progress: %d%%" % (obj.get_progress() * 100))
-        logging.info("Progress bar: %s" % obj.get_progress_bar())
-        logging.debug("Status: %s" % obj.get_status())
-        logging.debug("\n" * 2 + "=" * 50 + "\n" * 2)
-        time.sleep(2)
-    fp = Path(obj.get_dest())
-
+    cmd = f"aria2c -o '{fp}' '{download_target.url}'"
+    logging.debug("Command to be run: {}".format(cmd))
+    subprocess.run(cmd,shell=True)
+    fp = Path(fp)
     logging.info("Final {} file: {}".format(download_target.type, fp))
     return fp
 
