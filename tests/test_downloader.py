@@ -32,12 +32,27 @@ def captions():
     url = "https://www.youtube.com/watch?v=QRS8MkLhQmM"
 
     command = " ".join(("python",
-                        os.path.join("..","downloader.py"),
+                        os.path.join("..", "downloader.py"),
                         url,
                         "-v",
                         "-i"
                         ))
     return command
+
+
+def check_expected(base_command, downloaded_expected, itag, size_expected):
+    if downloaded_expected.is_file():
+        os.remove(downloaded_expected)
+    cmd = base_command + " " + str(itag)
+    subprocess.run(cmd, shell=True)
+    if all((downloaded_expected.is_file(),
+            math.isclose(downloaded_expected.stat().st_size, size_expected,
+                         rel_tol=0.01))):
+        os.remove(downloaded_expected)
+        assert True
+    else:
+        assert False
+
 
 def test_list(base_command):
     assert subprocess.run(base_command + " 1 -l", shell=True)
@@ -46,97 +61,48 @@ def test_list(base_command):
 def test_audio(base_command):
     # test for audio file only
     downloaded_expected = Path("Short wildlife video clip HD-audio-output.mkv")
-    if downloaded_expected.is_file():
-        os.remove(downloaded_expected)
-    cmd = base_command + " 249"
-    subprocess.run(cmd, shell=True)
+    itag = 249
     size_expected = 224096
-    if all((downloaded_expected.is_file(),
-        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
-        os.remove(downloaded_expected)
-        assert True
-    else:
-        assert False
+    check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
 def test_video_only(base_command):
     # test for low quality video file muxing
     downloaded_expected = Path("Short wildlife video clip HD-output.mkv")
-    if downloaded_expected.is_file():
-        os.remove(downloaded_expected)
-    cmd = base_command + " 278"
-    subprocess.run(cmd, shell=True)
+    itag = 278
     size_expected = 843467
-    if all((downloaded_expected.is_file(),
-        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
-        os.remove(downloaded_expected)
-        assert True
-    else:
-        assert False
+    check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
 def test_combined(base_command):
     # test for low quality video file download
     downloaded_expected = Path("Short wildlife video clip HD-output.mkv")
-    if downloaded_expected.is_file():
-        os.remove(downloaded_expected)
-    cmd = base_command + " 17"
-    subprocess.run(cmd, shell=True)
+    itag = 17
     size_expected = 291297
-    if all((downloaded_expected.is_file(),
-        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
-        os.remove(downloaded_expected)
-        assert True
-    else:
-        assert False
+    check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
 def test_hq_combined(base_command):
     # test for high quality combined video file
     downloaded_expected = Path("Short wildlife video clip HD-output.mkv")
-    if downloaded_expected.is_file():
-        os.remove(downloaded_expected)
-    cmd = base_command + " 247"
-    subprocess.run(cmd, shell=True)
+    itag = 247
     size_expected = 6832831
-    if all((downloaded_expected.is_file(),
-        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
-        os.remove(downloaded_expected)
-        assert True
-    else:
-        assert False
+    check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
 def test_audio_captions(captions):
     # test for audio file only
     downloaded_expected = Path("YouTube Captions and Subtitles-audio-output.mkv")
-    if downloaded_expected.is_file():
-        os.remove(downloaded_expected)
-    cmd = captions + " 249"
-    subprocess.run(cmd, shell=True)
+    itag = 249
     size_expected = 550250
-    if all((downloaded_expected.is_file(),
-        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
-        os.remove(downloaded_expected)
-        assert True
-    else:
-        assert False
-
+    check_expected(base_command, downloaded_expected, itag, size_expected)
 
 def test_video_only_captions(captions):
     # test for low quality video file muxing
     downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
-    if downloaded_expected.is_file():
-        os.remove(downloaded_expected)
-    cmd = captions + " 278"
-    subprocess.run(cmd, shell=True)
+    itag = 249
     size_expected = 2603339
-    if all((downloaded_expected.is_file(),
-        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
-        os.remove(downloaded_expected)
-        assert True
-    else:
-        assert False
+    check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
 def test_combined_captions(captions):
@@ -144,28 +110,13 @@ def test_combined_captions(captions):
     downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
     if downloaded_expected.is_file():
         os.remove(downloaded_expected)
-    cmd = captions + " 17"
-    subprocess.run(cmd, shell=True)
+    itag = 17
     size_expected = 1016003
-    if all((downloaded_expected.is_file(),
-        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
-        os.remove(downloaded_expected)
-        assert True
-    else:
-        assert False
-
+    check_expected(base_command, downloaded_expected, itag, size_expected)
 
 def test_hq_mux(captions):
     # test for high quality combined video file
     downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
-    if downloaded_expected.is_file():
-        os.remove(downloaded_expected)
-    cmd = captions + " 243"
-    subprocess.run(cmd, shell=True)
+    itag = 243
     size_expected = 4846884
-    if all((downloaded_expected.is_file(),
-        math.isclose(downloaded_expected.stat().st_size, size_expected, rel_tol=0.01))):
-        os.remove(downloaded_expected)
-        assert True
-    else:
-        assert False
+    check_expected(base_command, downloaded_expected, itag, size_expected)
