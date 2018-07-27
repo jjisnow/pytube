@@ -41,7 +41,7 @@ def downloader():
     arguments = check_url(arguments)
 
     # check requirements: aria2c and ffmpeg
-    status, response = subprocess.getstatusoutput('which aria2c')
+    check_requirements('aria2c', 'ffmpeg')
 
     start_time = time.time()
 
@@ -89,6 +89,16 @@ def downloader():
     print("All done!")
     print("--- {:.2f} seconds ---".format(time.time() - start_time))
 
+def check_requirements(*args):
+
+    logging.debug(f'Requirements: {args}')
+    for arg in args:
+        status, response = subprocess.getstatusoutput(f'which {arg}')
+        if status == 0:
+            logging.debug(f'Requirement: {arg}  met with {response}')
+        else:
+            logging.debug(f'Requirement: {arg} not met! status: {status}')
+            raise Exception(f'Requirement: {arg} not met! status: {status}')
 
 def cleanup_files(audio_path, subtitle_path, video_path):
     logging.info("CLEANUP:")
