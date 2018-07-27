@@ -93,9 +93,10 @@ def check_requirements(*args):
 
     logging.debug(f'Requirements: {args}')
     for arg in args:
-        status, response = subprocess.getstatusoutput(f'which {arg}')
-        if status == 0:
-            logging.debug(f'Requirement: {arg}  met with {response}')
+        # status, response = subprocess.getstatusoutput(f'which {arg}')
+        status = shutil.which(f'{arg}')
+        if status is not None:
+            logging.debug(f'Requirement: {arg}  met with {status}')
         else:
             logging.debug(f'Requirement: {arg} not met! status: {status}')
             raise Exception(f'Requirement: {arg} not met! status: {status}')
@@ -249,7 +250,7 @@ def download_file(download_target):
     logging.debug("Targeting destination: {}".format(fp))
 
     # download the file
-    cmd = f"aria2c -o '{fp}' '{download_target.url}'"
+    cmd = f'aria2c -o "{fp}" "{download_target.url}"'
     logging.debug("Command to be run: {}".format(cmd))
     subprocess.run(cmd,shell=True)
     fp = Path(fp)
