@@ -22,7 +22,6 @@ import shutil
 import sys
 from pprint import pformat
 
-from pySmartDL import SmartDL
 import time
 from pytube import YouTube
 import subprocess
@@ -39,8 +38,6 @@ def downloader():
     arguments = parse_arguments()
     config_loggers(arguments)
     arguments = check_url(arguments)
-
-    # check requirements: aria2c and ffmpeg
     check_requirements('aria2c', 'ffmpeg')
 
     start_time = time.time()
@@ -90,15 +87,13 @@ def downloader():
     print("--- {:.2f} seconds ---".format(time.time() - start_time))
 
 def check_requirements(*args):
-
     logging.debug(f'Requirements: {args}')
     for arg in args:
-        # status, response = subprocess.getstatusoutput(f'which {arg}')
         status = shutil.which(f'{arg}')
         if status is not None:
             logging.debug(f'Requirement: {arg}  met with {status}')
         else:
-            logging.debug(f'Requirement: {arg} not met! status: {status}')
+            logging.error(f'Requirement: {arg} not met! status: {status}')
             raise Exception(f'Requirement: {arg} not met! status: {status}')
 
 def cleanup_files(audio_path, subtitle_path, video_path):
@@ -120,7 +115,6 @@ def cleanup_files(audio_path, subtitle_path, video_path):
 
 def parse_streams(streams):
     # take yt.streams.all() and parse into a list of dictionaries for presentation
-
     final_list = []
     for stream in streams:
         stream = str(stream).strip('<>').replace('Stream: ', '').split(' ')
@@ -160,7 +154,6 @@ def download_captions(yt, lang):
 
 
 def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
-    # mix audio as well afterwards
     logging.info("attempting to mix audio and video")
     # -y: global ie overwrite without asking
     # -i: input file
@@ -191,7 +184,7 @@ def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
           f'-c:a copy -c:v copy {subt_text} "{final_fp}"'
 
     logging.debug("Command to be run: {}".format(cmd))
-    subprocess.run(cmd, shell=True)
+    subprocess.run(cmd, shell=True, check=True)
     logging.info("Final muxed file: {}".format(final_fp))
 
     return final_fp
@@ -252,7 +245,7 @@ def download_file(download_target):
     # download the file
     cmd = f'aria2c -o "{fp}" "{download_target.url}"'
     logging.debug("Command to be run: {}".format(cmd))
-    subprocess.run(cmd,shell=True)
+    subprocess.run(cmd,shell=True, check=True)
     fp = Path(fp)
     logging.info("Final {} file: {}".format(download_target.type, fp))
     return fp
