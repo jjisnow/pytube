@@ -1,8 +1,10 @@
 """ Downloader of video website links.
-Will download video and mux with audio, or audio only, or video with audio already
+Will download video and mux with audio, or audio only, or video with audio
+already
 
 Usage:
-  downloader.py [URL...] [--verbose | --quiet] [--itag value] [--lang string] [--list]
+  downloader.py [URL...] [--verbose | --quiet] [--itag value] [--lang string]
+  [--list]
 
 Arguments:
   URL   individual websites to download video from
@@ -43,7 +45,7 @@ def downloader():
     start_time = time.time()
 
     for file in arguments['URL']:
-        logging.debug("Parsing url: {}".format(file))
+        logging.debug(f"Parsing url: {file}")
         yt = YouTube(file)
         parse_streams(yt.streams.all())
         if arguments['--list']:
@@ -56,7 +58,7 @@ def downloader():
         video_path, audio_path, subtitle_path, videofps = [None] * 4
         if not target_stream.includes_audio_track:
             logging.info("downloading video first......")
-            logging.debug("current directory: {}".format(Path.cwd()))
+            logging.debug(f"current directory: {Path.cwd()}")
             video_path = download_file(target_stream)
             videofps = target_stream.fps
 
@@ -65,7 +67,7 @@ def downloader():
             audio_path = download_file(audio_target)
 
         else:
-            logging.info("downloading {} ONLY".format(target_stream.type))
+            logging.info(f"downloading {target_stream.type} ONLY")
             if target_stream.type == 'video':
                 video_path = download_file(target_stream)
                 videofps = target_stream.fps
@@ -75,16 +77,18 @@ def downloader():
                 audio_path = download_file(audio_target)
 
             else:
-                logging.critical("unexpected file type: {}".format(target_stream.type))
+                logging.critical(
+                    f"unexpected file type: {target_stream.type}")
                 return 1
 
         subtitle_path = download_captions(yt, arguments['--lang'])
         final_fp = mux_files(audio_path, subtitle_path, video_path, videofps)
         cleanup_files(audio_path, subtitle_path, video_path)
-        logging.info("Final output file: {}".format(final_fp))
+        logging.info(f"Final output file: {final_fp}")
 
     print("All done!")
     print("--- {:.2f} seconds ---".format(time.time() - start_time))
+
 
 def check_requirements(*args):
     logging.debug(f'Requirements: {args}')
@@ -96,21 +100,22 @@ def check_requirements(*args):
             logging.error(f'Requirement: {arg} not met! status: {status}')
             raise Exception(f'Requirement: {arg} not met! status: {status}')
 
+
 def cleanup_files(audio_path, subtitle_path, video_path):
     logging.info("CLEANUP:")
     for k, v in {'audio'    : audio_path,
                  'video'    : video_path,
                  'subtitles': subtitle_path}.items():
         if v:
-            logging.info("CLEANUP: deleting {} file: {}".format(k, v))
+            logging.info(f"CLEANUP: deleting {k} file: {v}")
             # check for errors
             errors = os.remove(v)
             if not errors:
                 logging.info("Success!")
             else:
-                logging.error("Error code detected: {}".format(errors))
+                logging.error(f"Error code detected: {errors}")
         else:
-            logging.debug('CLEANUP: no {} file detected'.format(k))
+            logging.debug(f'CLEANUP: no {k} file detected')
 
 
 def parse_streams(streams):
@@ -183,9 +188,9 @@ def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
     cmd = f'ffmpeg -y {audio_fp_text} {video_fp_text} {subt_fp} {videofps_text} ' \
           f'-c:a copy -c:v copy {subt_text} "{final_fp}"'
 
-    logging.debug("Command to be run: {}".format(cmd))
+    logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
-    logging.info("Final muxed file: {}".format(final_fp))
+    logging.info(f"Final muxed file: {final_fp}")
 
     return final_fp
 
@@ -224,14 +229,14 @@ def config_loggers(arguments):
     root_handler.setLevel(log_level)
     logger.removeHandler(root_handler)
 
-    logger.info("Supplied args: \n {}".format(arguments))
+    logger.info(f"Supplied args: \n {arguments}")
     logger.removeHandler(stdout_handler)
     logger.addHandler(root_handler)
 
 
 def download_file(download_target):
-    logging.info("Downloading itag: {}".format(download_target.itag))
-    logging.info("Download url: {}".format(download_target.url))
+    logging.info(f"Downloading itag: {download_target.itag}")
+    logging.info(f"Download url: {download_target.url}")
 
     fp = Path(download_target.default_filename)
     # add '-audio' suffix if audio file
@@ -240,14 +245,14 @@ def download_file(download_target):
                       "-audio",
                       fp.suffix
                       ))
-    logging.debug("Targeting destination: {}".format(fp))
+    logging.debug(f"Targeting destination: {fp}")
 
     # download the file
     cmd = f'aria2c -o "{fp}" "{download_target.url}"'
-    logging.debug("Command to be run: {}".format(cmd))
-    subprocess.run(cmd,shell=True, check=True)
+    logging.debug(f"Command to be run: {cmd}")
+    subprocess.run(cmd, shell=True, check=True)
     fp = Path(fp)
-    logging.info("Final {} file: {}".format(download_target.type, fp))
+    logging.info(f"Final {download_target.type} file: {fp}")
     return fp
 
 
@@ -272,7 +277,7 @@ def check_url(arguments):
     if len(arguments['URL']) == 0:
         link = input("Provide a youtube link to download: ")
         arguments['URL'].append(link)
-    logging.info("Final args: {}".format(arguments))
+    logging.info(f"Final args: {arguments}")
 
     return arguments
 

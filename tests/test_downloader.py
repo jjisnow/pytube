@@ -28,7 +28,6 @@ def base_command():
 @pytest.fixture
 def captions():
     # youtube close caption demo
-    # TODO: reference size of videos downloaded for tests
     url = "https://www.youtube.com/watch?v=QRS8MkLhQmM"
 
     command = " ".join(("python",
@@ -97,6 +96,7 @@ def test_audio_captions(captions):
     size_expected = 550250
     check_expected(base_command, downloaded_expected, itag, size_expected)
 
+
 def test_video_only_captions(captions):
     # test for low quality video file muxing
     downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
@@ -113,6 +113,7 @@ def test_combined_captions(captions):
     itag = 17
     size_expected = 1016003
     check_expected(base_command, downloaded_expected, itag, size_expected)
+
 
 def test_hq_mux(captions):
     # test for high quality combined video file
