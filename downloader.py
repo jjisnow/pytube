@@ -103,8 +103,8 @@ def check_requirements(*args):
 
 def cleanup_files(audio_path, subtitle_path, video_path):
     logging.info("CLEANUP:")
-    for k, v in {'audio'    : audio_path,
-                 'video'    : video_path,
+    for k, v in {'audio': audio_path,
+                 'video': video_path,
                  'subtitles': subtitle_path}.items():
         if v:
             logging.info(f"CLEANUP: deleting {k} file: {v}")
@@ -119,7 +119,8 @@ def cleanup_files(audio_path, subtitle_path, video_path):
 
 
 def parse_streams(streams):
-    # take yt.streams.all() and parse into a list of dictionaries for presentation
+    # take yt.streams.all() and parse into a list of dictionaries for
+    # presentation
     final_list = []
     for stream in streams:
         stream = str(stream).strip('<>').replace('Stream: ', '').split(' ')
@@ -185,8 +186,8 @@ def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
     subt_text = '-c:s srt' if subt_fp else ''
     videofps_text = f'-r {videofps}' if videofps else ''
 
-    cmd = f'ffmpeg -y {audio_fp_text} {video_fp_text} {subt_fp} {videofps_text} ' \
-          f'-c:a copy -c:v copy {subt_text} "{final_fp}"'
+    cmd = f'ffmpeg -y {audio_fp_text} {video_fp_text} {subt_fp} ' \
+          f'{videofps_text} -c:a copy -c:v copy {subt_text} "{final_fp}"'
 
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
@@ -209,8 +210,8 @@ def get_itag(arguments):
 
 
 def config_loggers(arguments):
-    """ displays the supplied arguments to stdout before switching back to the stderr
-    handler
+    """ displays the supplied arguments to stdout before switching back to
+    the stderr handler
 
     :param arguments:
     :param log_level:
