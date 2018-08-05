@@ -103,6 +103,7 @@ def downloader(*args, **kwargs):
 
 
 def check_requirements(*args):
+    '''ensure executables supplied exist on the file system'''
     logging.debug(f'Requirements: {args}')
     for arg in args:
         status = shutil.which(f'{arg}')
@@ -114,6 +115,7 @@ def check_requirements(*args):
 
 
 def cleanup_files(audio_path, subtitle_path, video_path):
+    '''cleanup file paths supplied'''
     logging.info("CLEANUP:")
     for k, v in {'audio': audio_path,
                  'video': video_path,
@@ -131,8 +133,9 @@ def cleanup_files(audio_path, subtitle_path, video_path):
 
 
 def parse_streams(streams):
-    # take yt.streams.all() and parse into a list of dictionaries for
-    # presentation
+    '''
+    take yt.streams.all() and print it as a table for viewing
+    '''
     final_list = []
     for stream in streams:
         stream = str(stream).strip('<>').replace('Stream: ', '').split(' ')
@@ -172,6 +175,7 @@ def download_captions(yt, lang):
 
 
 def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
+    '''mux file streams supplied'''
     logging.info("attempting to mix audio and video")
     # -y: global ie overwrite without asking
     # -i: input file
@@ -248,6 +252,7 @@ def config_loggers(arguments):
 
 
 def download_file(download_target):
+    '''download stream given a download_target'''
     logging.debug(f"current directory: {Path.cwd()}")
     logging.info(f"Downloading itag: {download_target.itag}")
     logging.info(f"Download url: {download_target.url}")
@@ -270,6 +275,7 @@ def download_file(download_target):
 
 
 def parse_arguments():
+    '''set arguments dictionary from supplied arguments'''
     arguments = docopt(__doc__, help=True)
     if arguments['--verbose']:
         log_level = logging.DEBUG
