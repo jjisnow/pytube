@@ -22,9 +22,11 @@ Options:
 import os
 import shutil
 import sys
+from functools import wraps
 from pprint import pformat
 
 import time
+
 from pytube import YouTube
 import subprocess
 from pathlib import Path
@@ -33,7 +35,21 @@ from docopt import docopt
 from tabulate import tabulate
 
 
-def downloader():
+def timing(fn):
+    @wraps(fn)
+    def wrap(*args, **kw):
+        time_start = time.time()
+        result = fn(*args, **kw)
+        time_end = time.time()
+        print(f'function:{fn.__name__} args:[{args}, {kw}]'
+              f'--- {time_end - time_start:2.2f} sec ---')
+        return result
+
+    return wrap
+
+
+@timing
+def downloader(*args, **kwargs):
     ''' main interface for downloader file
     '''
 
@@ -41,8 +57,6 @@ def downloader():
     config_loggers(arguments)
     arguments = check_url(arguments)
     check_requirements('aria2c', 'ffmpeg')
-
-    start_time = time.time()
 
     for file in arguments['URL']:
         logging.debug(f"Parsing url: {file}")
@@ -58,7 +72,6 @@ def downloader():
         video_path, audio_path, subtitle_path, videofps = [None] * 4
         if not target_stream.includes_audio_track:
             logging.info("downloading video first......")
-            logging.debug(f"current directory: {Path.cwd()}")
             video_path = download_file(target_stream)
             videofps = target_stream.fps
 
@@ -86,8 +99,7 @@ def downloader():
         cleanup_files(audio_path, subtitle_path, video_path)
         logging.info(f"Final output file: {final_fp}")
 
-    print("All done!")
-    print("--- {:.2f} seconds ---".format(time.time() - start_time))
+    return 0
 
 
 def check_requirements(*args):
@@ -236,11 +248,11 @@ def config_loggers(arguments):
 
 
 def download_file(download_target):
+    logging.debug(f"current directory: {Path.cwd()}")
     logging.info(f"Downloading itag: {download_target.itag}")
     logging.info(f"Download url: {download_target.url}")
 
     fp = Path(download_target.default_filename)
-    # add '-audio' suffix if audio file
     if download_target.type == 'audio':
         fp = ''.join((str(fp.with_suffix('').name),
                       "-audio",
@@ -265,9 +277,6 @@ def parse_arguments():
         log_level = logging.CRITICAL
     else:
         log_level = logging.INFO
-    # Invalidated by docopts defaults options
-    # if not arguments['--lang']:
-    #     arguments['--lang'] = 'English'
 
     arguments['log_level'] = log_level
     return arguments
