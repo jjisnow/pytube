@@ -36,6 +36,7 @@ from tabulate import tabulate
 
 
 def timing(fn):
+    '''Timing decorator for program'''
     @wraps(fn)
     def wrap(*args, **kw):
         time_start = time.time()
