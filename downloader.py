@@ -164,7 +164,8 @@ def download_captions(yt, lang):
         logging.debug(f'No {lang} Captions found!')
         return None
 
-    subt_fp = f'{yt.title}-captions.srt'
+    subt_base = Path(yt.fmt_streams[0].default_filename).stem
+    subt_fp = f'{subt_base}-captions.srt'
     if os.path.exists(subt_fp):
         logging.info(f'File {subt_fp} exists already!! Deleting')
         os.remove(subt_fp)
@@ -267,7 +268,14 @@ def download_file(download_target):
     logging.debug(f"Targeting destination: {fp}")
 
     # download the file
-    cmd = f'aria2c -o "{fp}" "{download_target.url}"'
+    # -c : continue/resume downloads
+    # -j : number of parallel downloads for 1 link
+    # --optimize-concurrent-downloads=true: optimise speed
+    # -x : max connections per server
+    # -k : min split size
+    # -s, --split=N: Download using N connections
+    cmd = f'aria2c --continue=true -j5 -x5 --optimize-concurrent-downloads=true '\
+          f'-k 1M --split=5 -o "{fp}" "{download_target.url}"'
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
     fp = Path(fp)
