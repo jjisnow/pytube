@@ -16,6 +16,9 @@ def base_command():
     # TODO: reference size of videos downloaded for tests
     # url = "https://www.youtube.com/watch?v=QRS8MkLhQmM"
 
+    # short video with non-safe filename defaults
+    # url = "https://www.youtube.com/watch?v=BpaYqFd5S5c"
+
     command = " ".join(("python",
                         os.path.join("..", "downloader.py"),
                         url,
@@ -91,7 +94,9 @@ def test_hq_combined(base_command):
 
 def test_audio_captions(captions):
     # test for audio file only
-    downloaded_expected = Path("YouTube Captions and Subtitles-audio-output.mkv")
+    base_command = captions
+    downloaded_expected = Path(
+        "YouTube Captions and Subtitles-audio-output.mkv")
     itag = 249
     size_expected = 550250
     check_expected(base_command, downloaded_expected, itag, size_expected)
@@ -99,6 +104,7 @@ def test_audio_captions(captions):
 
 def test_video_only_captions(captions):
     # test for low quality video file muxing
+    base_command = captions
     downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
     itag = 249
     size_expected = 2603339
@@ -107,6 +113,7 @@ def test_video_only_captions(captions):
 
 def test_combined_captions(captions):
     # test for low quality video file muxing
+    base_command = captions
     downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
     if downloaded_expected.is_file():
         os.remove(downloaded_expected)
@@ -117,7 +124,27 @@ def test_combined_captions(captions):
 
 def test_hq_mux(captions):
     # test for high quality combined video file
+    base_command = captions
     downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
     itag = 243
     size_expected = 4846884
     check_expected(base_command, downloaded_expected, itag, size_expected)
+
+
+def test_non_safe_file_title():
+    url = "https://www.youtube.com/watch?v=BpaYqFd5S5c"
+    base_command = " ".join(("python",
+                        os.path.join("..", "downloader.py"),
+                        url,
+                        "-v",
+                        "-i"
+                        ))
+    itag = 278
+    cmd = base_command + " " + str(itag)
+    downloaded_expected = Path('Adam Savages New One Day Builds T-Shirt!-output.mkv')
+    if downloaded_expected.is_file():
+        os.remove(downloaded_expected)
+    exit_code = subprocess.run(cmd, shell=True)
+    os.remove(downloaded_expected)
+    print(exit_code.returncode)
+    assert exit_code.returncode == 0
