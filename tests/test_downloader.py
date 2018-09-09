@@ -15,7 +15,8 @@ def base_command():
         "python",
         os.path.join("..", "pytube", "downloader.py"),
         "-v",
-        ))
+    ))
+
 
 @pytest.fixture
 def wildlife_clip(base_command):
@@ -31,7 +32,6 @@ def wildlife_clip(base_command):
 
     command = " ".join((base_command,
                         url,
-                        "-i"
                         ))
     return command
 
@@ -43,7 +43,6 @@ def captions(base_command):
 
     command = " ".join((base_command,
                         url,
-                        "-i"
                         ))
     return command
 
@@ -51,7 +50,7 @@ def captions(base_command):
 def check_expected(base_command, downloaded_expected, itag, size_expected):
     if downloaded_expected.is_file():
         os.remove(downloaded_expected)
-    cmd = base_command + " " + str(itag)
+    cmd = base_command + f" -i {str(itag)}"
     subprocess.run(cmd, shell=True)
     if all((downloaded_expected.is_file(),
             math.isclose(downloaded_expected.stat().st_size, size_expected,
@@ -85,7 +84,7 @@ def test_list(wildlife_clip):
 def test_audio(wildlife_clip):
     # test for audio file only
     downloaded_expected = Path(
-        "Short wildlife video clip HD - audio - output.mkv")
+        "Short wildlife video clip HD-audio-output.mkv")
     itag = 249
     size_expected = 224096
     check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
@@ -158,11 +157,10 @@ def test_hq_mux(captions):
 def test_non_safe_file_title(base_command):
     url = "https://www.youtube.com/watch?v=BpaYqFd5S5c"
     base_command = " ".join((base_command,
-                        url,
-                        "-i"
-                        ))
+                             url,
+                             ))
     itag = 278
-    cmd = base_command + " " + str(itag)
+    cmd = base_command + f" -i {str(itag)}"
     downloaded_expected = Path(
         'Adam Savages New One Day Builds T-Shirt!-output.mkv')
     if downloaded_expected.is_file():
