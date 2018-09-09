@@ -159,6 +159,7 @@ def download_captions(yt, lang):
     for index, c in captions:
         if lang in str(c):
             i = index
+            logging.debug(f'found {lang} captions at index {i}')
             break
     if i is None:
         logging.debug(f'No {lang} Captions found!')
