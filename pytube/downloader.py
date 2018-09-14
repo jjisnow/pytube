@@ -37,6 +37,7 @@ from tabulate import tabulate
 
 def timing(fn):
     '''Timing decorator for program'''
+
     @wraps(fn)
     def wrap(*args, **kw):
         time_start = time.time()
@@ -103,6 +104,58 @@ def downloader(*args, **kwargs):
     return 0
 
 
+def parse_arguments():
+    '''set arguments dictionary from supplied arguments'''
+    arguments = docopt(__doc__, help=True)
+    if arguments['--verbose']:
+        log_level = logging.DEBUG
+    elif arguments['--quiet']:
+        log_level = logging.CRITICAL
+    else:
+        log_level = logging.INFO
+
+    arguments['log_level'] = log_level
+    return arguments
+
+
+def config_loggers(arguments):
+    """ displays the supplied arguments to stdout before switching back to
+    the stderr handler
+
+    :param arguments:
+    :param log_level:
+    :return:
+    """
+
+    log_level = arguments['log_level']
+    logging.basicConfig(level=log_level)
+    logger = logging.getLogger()
+
+    stdout_handler = logging.StreamHandler(stream=sys.stdout)
+    stdout_handler.setLevel(log_level)
+    logger.addHandler(stdout_handler)
+
+    root_handler = logger.handlers[0]
+    root_handler.setLevel(log_level)
+    logger.removeHandler(root_handler)
+
+    logger.info(f"Supplied args: \n {arguments}")
+    logger.removeHandler(stdout_handler)
+    logger.addHandler(root_handler)
+
+
+def check_url(arguments):
+    ''' parse the url and obtain one if none provided
+    Use a provided link or the args provided
+    '''
+    if len(arguments['URL']) == 0:
+        link = input("Provide a youtube link to download: ")
+        arguments['URL'].append(link)
+    logging.info(f"Final args: {arguments}")
+
+    return arguments
+
+
 def check_requirements(*args):
     '''ensure executables supplied exist on the file system'''
     logging.debug(f'Requirements: {args}')
@@ -113,24 +166,6 @@ def check_requirements(*args):
         else:
             logging.error(f'Requirement: {arg} not met! status: {status}')
             raise Exception(f'Requirement: {arg} not met! status: {status}')
-
-
-def cleanup_files(audio_path, subtitle_path, video_path):
-    '''cleanup file paths supplied'''
-    logging.info("CLEANUP:")
-    for k, v in {'audio': audio_path,
-                 'video': video_path,
-                 'subtitles': subtitle_path}.items():
-        if v:
-            logging.info(f"CLEANUP: deleting {k} file: {v}")
-            # check for errors
-            errors = os.remove(v)
-            if not errors:
-                logging.info("Success!")
-            else:
-                logging.error(f"Error code detected: {errors}")
-        else:
-            logging.debug(f'CLEANUP: no {k} file detected')
 
 
 def parse_streams(streams):
@@ -149,6 +184,50 @@ def parse_streams(streams):
         final_list.append(stream_dict)
 
     print(tabulate(final_list, headers="keys"))
+
+
+def get_itag(arguments):
+    while True:
+        if arguments['--itag']:
+            itag = arguments['--itag']
+            break
+        try:
+            itag = int(input("Which stream do you want? (specify itag): "))
+            break
+        except ValueError:
+            logging.error("you need to provide a number!")
+    return itag
+
+
+def download_file(download_target):
+    '''download stream given a download_target'''
+    logging.debug(f"current directory: {Path.cwd()}")
+    logging.info(f"Downloading itag: {download_target.itag}")
+    logging.info(f"Download url: {download_target.url}")
+
+    fp = Path(download_target.default_filename)
+    if download_target.type == 'audio':
+        fp = ''.join((str(fp.with_suffix('').name),
+                      "-audio",
+                      fp.suffix
+                      ))
+    logging.debug(f"Targeting destination: {fp}")
+
+    # download the file
+    # -c : continue/resume downloads
+    # -j : number of parallel downloads for 1 link
+    # --optimize-concurrent-downloads=true: optimise speed
+    # -x : max connections per server
+    # -k : min split size
+    # -s, --split=N: Download using N connections
+    cmd = f'aria2c --continue=true -j5 -x5 ' \
+          f'--optimize-concurrent-downloads=true ' \
+          f'-k 1M --split=5 -o "{fp}" "{download_target.url}"'
+    logging.debug(f"Command to be run: {cmd}")
+    subprocess.run(cmd, shell=True, check=True)
+    fp = Path(fp)
+    logging.info(f"Final {download_target.type} file: {fp}")
+    return fp
 
 
 def download_captions(yt, lang):
@@ -215,97 +294,22 @@ def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
     return final_fp
 
 
-def get_itag(arguments):
-    while True:
-        if arguments['--itag']:
-            itag = arguments['--itag']
-            break
-        try:
-            itag = int(input("Which stream do you want? (specify itag): "))
-            break
-        except ValueError:
-            logging.error("you need to provide a number!")
-    return itag
-
-
-def config_loggers(arguments):
-    """ displays the supplied arguments to stdout before switching back to
-    the stderr handler
-
-    :param arguments:
-    :param log_level:
-    :return:
-    """
-
-    log_level = arguments['log_level']
-    logging.basicConfig(level=log_level)
-    logger = logging.getLogger()
-
-    stdout_handler = logging.StreamHandler(stream=sys.stdout)
-    stdout_handler.setLevel(log_level)
-    logger.addHandler(stdout_handler)
-
-    root_handler = logger.handlers[0]
-    root_handler.setLevel(log_level)
-    logger.removeHandler(root_handler)
-
-    logger.info(f"Supplied args: \n {arguments}")
-    logger.removeHandler(stdout_handler)
-    logger.addHandler(root_handler)
-
-
-def download_file(download_target):
-    '''download stream given a download_target'''
-    logging.debug(f"current directory: {Path.cwd()}")
-    logging.info(f"Downloading itag: {download_target.itag}")
-    logging.info(f"Download url: {download_target.url}")
-
-    fp = Path(download_target.default_filename)
-    if download_target.type == 'audio':
-        fp = ''.join((str(fp.with_suffix('').name),
-                      "-audio",
-                      fp.suffix
-                      ))
-    logging.debug(f"Targeting destination: {fp}")
-
-    # download the file
-    # -c : continue/resume downloads
-    # -j : number of parallel downloads for 1 link
-    # --optimize-concurrent-downloads=true: optimise speed
-    # -x : max connections per server
-    # -k : min split size
-    # -s, --split=N: Download using N connections
-    cmd = f'aria2c --continue=true -j5 -x5 --optimize-concurrent-downloads=true '\
-          f'-k 1M --split=5 -o "{fp}" "{download_target.url}"'
-    logging.debug(f"Command to be run: {cmd}")
-    subprocess.run(cmd, shell=True, check=True)
-    fp = Path(fp)
-    logging.info(f"Final {download_target.type} file: {fp}")
-    return fp
-
-
-def parse_arguments():
-    '''set arguments dictionary from supplied arguments'''
-    arguments = docopt(__doc__, help=True)
-    if arguments['--verbose']:
-        log_level = logging.DEBUG
-    elif arguments['--quiet']:
-        log_level = logging.CRITICAL
-    else:
-        log_level = logging.INFO
-
-    arguments['log_level'] = log_level
-    return arguments
-
-
-def check_url(arguments):
-    # Use a provided link or the args provided
-    if len(arguments['URL']) == 0:
-        link = input("Provide a youtube link to download: ")
-        arguments['URL'].append(link)
-    logging.info(f"Final args: {arguments}")
-
-    return arguments
+def cleanup_files(audio_path, subtitle_path, video_path):
+    '''cleanup file paths supplied'''
+    logging.info("CLEANUP:")
+    for k, v in {'audio': audio_path,
+                 'video': video_path,
+                 'subtitles': subtitle_path}.items():
+        if v:
+            logging.info(f"CLEANUP: deleting {k} file: {v}")
+            # check for errors
+            errors = os.remove(v)
+            if not errors:
+                logging.info("Success!")
+            else:
+                logging.error(f"Error code detected: {errors}")
+        else:
+            logging.debug(f'CLEANUP: no {k} file detected')
 
 
 if __name__ == '__main__':
