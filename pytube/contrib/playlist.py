@@ -18,16 +18,17 @@ class Playlist(object):
     playlist
     """
 
-    def __init__(self, url):
+    def __init__(self, url, suppress_exception=False):
         self.playlist_url = url
         self.video_urls = []
+        self.suppress_exception = suppress_exception
 
     def construct_playlist_url(self):
-        """There are two kinds of playlist urls in YouTube. One that
-        contains watch?v= in URL, another one contains the "playlist?list="
-        portion. It is preferable to work with the later one.
+        """There are two kinds of playlist urls in YouTube. One that contains
+        watch?v= in URL, another one contains the "playlist?list=" portion. It
+        is preferable to work with the later one.
 
-        :return: playlist url -> string
+        :return: playlist url
         """
 
         if 'watch?v=' in self.playlist_url:
@@ -41,13 +42,12 @@ class Playlist(object):
     def _load_more_url(self, req):
         """Given an html page or a fragment thereof, looks for
         and returns the "load more" url if found.
-
-        :return: string
         """
         try:
             load_more_url = 'https://www.youtube.com' + re.search(
                 r'data-uix-load-more-href=\"(/browse_ajax\?'
-                'action_continuation=.*?)\"', req).group(1)
+                'action_continuation=.*?)\"', req,
+            ).group(1)
         except AttributeError:
             load_more_url = ''
         return load_more_url
@@ -56,8 +56,6 @@ class Playlist(object):
         """Parse the video links from the page source, extracts and
         returns the /watch?v= part from video link href
         It's an alternative for BeautifulSoup
-
-        :return: list
         """
 
         url = self.construct_playlist_url()
@@ -74,12 +72,15 @@ class Playlist(object):
             logger.debug('load more url: %s' % load_more_url)
             req = request.get(load_more_url)
             load_more = json.loads(req)
-            videos = re.findall(r'href=\"(/watch\?v=[\w-]*)',
-                                load_more['content_html'])
+            videos = re.findall(
+                r'href=\"(/watch\?v=[\w-]*)',
+                load_more['content_html'],
+            )
             # remove duplicates
             link_list.extend(list(OrderedDict.fromkeys(videos)))
             load_more_url = self._load_more_url(
-                            load_more['load_more_widget_html'])
+                load_more['load_more_widget_html'],
+            )
 
         return link_list
 
@@ -116,7 +117,9 @@ class Playlist(object):
         return (str(i).zfill(digits) for i in range(start, stop, step))
 
     def download_all(
-        self, download_path=None, prefix_number=True,
+        self,
+        download_path=None,
+        prefix_number=True,
         reverse_numbering=False,
     ):
         """Download all the videos in the the playlist. Initially, download
@@ -147,17 +150,26 @@ class Playlist(object):
         prefix_gen = self._path_num_prefix_generator(reverse_numbering)
 
         for link in self.video_urls:
-            yt = YouTube(link)
-            # TODO: this should not be hardcoded to a single user's preference
-            dl_stream = yt.streams.filter(
-                progressive=True, subtype='mp4',
-            ).order_by('resolution').desc().first()
-
-            logger.debug('download path: %s', download_path)
-            if prefix_number:
-                prefix = next(prefix_gen)
-                logger.debug('file prefix is: %s', prefix)
-                dl_stream.download(download_path, filename_prefix=prefix)
+            try:
+                yt = YouTube(link)
+            except Exception as e:
+                logger.debug(e)
+                if not self.suppress_exception:
+                    raise e
+                else:
+                    logger.debug('Exception suppressed')
             else:
-                dl_stream.download(download_path)
-            logger.debug('download complete')
+                # TODO: this should not be hardcoded to a single user's
+                # preference
+                dl_stream = yt.streams.filter(
+                    progressive=True, subtype='mp4',
+                ).order_by('resolution').desc().first()
+
+                logger.debug('download path: %s', download_path)
+                if prefix_number:
+                    prefix = next(prefix_gen)
+                    logger.debug('file prefix is: %s', prefix)
+                    dl_stream.download(download_path, filename_prefix=prefix)
+                else:
+                    dl_stream.download(download_path)
+                logger.debug('download complete')
