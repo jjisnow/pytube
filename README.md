@@ -46,8 +46,9 @@ Finally *pytube* also includes a command-line utility, allowing you to quickly d
 - Caption Track Support
 - Outputs Caption Tracks to .srt format (SubRip Subtitle)
 - Ability to Capture Thumbnail URL.
-- Extensively Documented Source Code
-- Dependency on pySmartDL for improved downloading
+- Documented Source Code
+- Dependency on aria2c for improved downloading
+- Dependency on ffmpeg for mixing tracks
 
 ## Installation
 
