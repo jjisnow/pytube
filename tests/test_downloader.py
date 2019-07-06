@@ -59,7 +59,7 @@ def check_expected(base_command, downloaded_expected, itag, size_expected):
         assert True
     else:
         print(f'Size not correct. Expected {size_expected}, ' \
-            f'Got {downloaded_expected.stat().st_zize}')
+                  f'Got {downloaded_expected.stat().st_zize}')
         assert False
 
 
@@ -91,14 +91,6 @@ def test_audio(wildlife_clip):
     check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
 
 
-def test_video_only(wildlife_clip):
-    # test for low quality video file muxing
-    downloaded_expected = Path("Short wildlife video clip HD-output.mkv")
-    itag = 278
-    size_expected = 843467
-    check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
-
-
 def test_combined(wildlife_clip):
     # test for low quality video file download
     downloaded_expected = Path("Short wildlife video clip HD-output.mkv")
@@ -122,16 +114,6 @@ def test_audio_captions(captions):
         "YouTube Captions and Subtitles-audio-output.mkv")
     itag = 249
     size_expected = 550250
-    check_expected(base_command, downloaded_expected, itag, size_expected)
-
-
-def test_video_only_captions(captions):
-    # test for low quality video file muxing
-    base_command = captions
-    downloaded_expected = Path(
-        "YouTube Captions and Subtitles-output.mkv")
-    itag = 278
-    size_expected = 2603339
     check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
