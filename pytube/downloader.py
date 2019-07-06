@@ -131,17 +131,18 @@ def config_loggers(arguments):
     logging.basicConfig(level=log_level)
     logger = logging.getLogger()
 
-    stdout_handler = logging.StreamHandler(stream=sys.stdout)
-    stdout_handler.setLevel(log_level)
-    logger.addHandler(stdout_handler)
+    # These lines are needed to create a stdout handler
+    # stdout_handler = logging.StreamHandler(stream=sys.stdout)
+    # stdout_handler.setLevel(log_level)
+    # logger.addHandler(stdout_handler)
+    #
+    # root_handler = logger.handlers[0]
+    # root_handler.setLevel(log_level)
+    # logger.removeHandler(root_handler)
 
-    root_handler = logger.handlers[0]
-    root_handler.setLevel(log_level)
-    logger.removeHandler(root_handler)
-
-    logger.info(f"Supplied args: \n {arguments}")
-    logger.removeHandler(stdout_handler)
-    logger.addHandler(root_handler)
+    logging.info(f"Supplied args: \n {arguments}")
+    # logger.removeHandler(stdout_handler)
+    # logger.addHandler(root_handler)
 
 
 def check_url(arguments):

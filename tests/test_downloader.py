@@ -58,7 +58,8 @@ def check_expected(base_command, downloaded_expected, itag, size_expected):
         os.remove(downloaded_expected)
         assert True
     else:
-        print()
+        print(f'Size not correct. Expected {size_expected}, ' \
+            f'Got {downloaded_expected.stat().st_zize}')
         assert False
 
 
@@ -101,16 +102,16 @@ def test_video_only(wildlife_clip):
 def test_combined(wildlife_clip):
     # test for low quality video file download
     downloaded_expected = Path("Short wildlife video clip HD-output.mkv")
-    itag = 17
-    size_expected = 291297
+    itag = 278
+    size_expected = 839401
     check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
 
 
 def test_hq_combined(wildlife_clip):
     # test for high quality combined video file
     downloaded_expected = Path("Short wildlife video clip HD-output.mkv")
-    itag = 247
-    size_expected = 6832831
+    itag = 22
+    size_expected = 8974399
     check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
 
 
