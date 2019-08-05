@@ -96,12 +96,15 @@ def downloader(*args, **kwargs):
                     f"unexpected file type: {target_stream.type}")
                 return 1
 
-        subtitle_path = download_captions(yt, arguments['--lang'])
-        final_fp = mux_files(audio_path, subtitle_path, video_path, videofps)
+        if not target_stream.type == 'audio':
+            subtitle_path = download_captions(yt, arguments['--lang'])
+
         # In the event only audio, create HQ mp3
         if target_stream.type == 'audio':
-            final_fp = make_mp3(Path(final_fp))
-        cleanup_files(audio_path, subtitle_path, video_path)
+            final_fp = make_mp3(audio_path)
+        else:
+            final_fp = mux_files(audio_path, video_path, subtitle_path, videofps)
+        cleanup_files(audio_path, video_path, subtitle_path)
         logging.info(f"Final output file: {final_fp}")
 
     return 0
@@ -225,8 +228,8 @@ def download_file(download_target):
     # -k : min split size
     # -s, --split=N: Download using N connections
     cmd = f'aria2c --continue=true -j5 -x5 ' \
-          f'--optimize-concurrent-downloads=true ' \
-          f'-k 1M --split=5 -o "{fp}" "{download_target.url}"'
+        f'--optimize-concurrent-downloads=true ' \
+        f'-k 1M --split=5 -o "{fp}" "{download_target.url}"'
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
     fp = Path(fp)
@@ -260,7 +263,7 @@ def download_captions(yt, lang):
         return subt_fp
 
 
-def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
+def mux_files(audio_fp, video_fp, subt_fp=None, videofps=None):
     '''mux file streams supplied'''
     logging.info("attempting to mix audio and video")
     # -y: global ie overwrite without asking
@@ -289,7 +292,7 @@ def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
     videofps_text = f'-r {videofps}' if videofps else ''
 
     cmd = f'ffmpeg -y {audio_fp_text} {video_fp_text} {subt_fp} ' \
-          f'{videofps_text} -c:a copy -c:v copy {subt_text} "{final_fp}"'
+        f'{videofps_text} -c:a copy -c:v copy {subt_text} "{final_fp}"'
 
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
@@ -301,8 +304,8 @@ def mux_files(audio_fp, subt_fp, video_fp, videofps=None):
 def cleanup_files(audio_path, subtitle_path, video_path):
     '''cleanup file paths supplied'''
     logging.info("CLEANUP:")
-    for k, v in {'audio': audio_path,
-                 'video': video_path,
+    for k, v in {'audio'    : audio_path,
+                 'video'    : video_path,
                  'subtitles': subtitle_path}.items():
         if v:
             logging.info(f"CLEANUP: deleting {k} file: {v}")
@@ -316,10 +319,10 @@ def cleanup_files(audio_path, subtitle_path, video_path):
             logging.debug(f'CLEANUP: no {k} file detected')
 
 
-def make_mp3(final_fp):
+def make_mp3(audio_path):
     '''convert from a mkv file to an mp3'''
     logging.debug(f"current directory: {Path.cwd()}")
-    fp = str(final_fp.with_suffix('.mp3'))
+    fp = str(audio_path.with_suffix('.mp3'))
     logging.debug(f"Targeting destination: {fp}")
 
     # convert the mp3
@@ -328,22 +331,13 @@ def make_mp3(final_fp):
     # -q:a 0   : highest variable audio quality
     # -n : exit immediately if file exists
     # -y : overwrite output files without asking
-    cmd = f'ffmpeg -i "{final_fp}" ' \
-          f'-c:a libmp3lame -q:a 0 ' \
-          f'"{fp}"'
+    cmd = f'ffmpeg -i "{audio_path}" ' \
+        f'-c:a libmp3lame -q:a 0 ' \
+        f'"{fp}"'
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
-    logging.info(f"CLEANUP: deleting {final_fp}")
-    # check for errors
-    errors = os.remove(final_fp)
-    if not errors:
-        logging.info("Success!")
-    else:
-        logging.error(f"Error code detected: {errors}")
     fp = Path(fp)
-
     return fp
-
 
 
 if __name__ == '__main__':
