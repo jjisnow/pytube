@@ -322,7 +322,7 @@ def cleanup_files(audio_path, subtitle_path, video_path):
 def make_mp3(audio_path):
     '''convert from a mkv file to an mp3'''
     logging.debug(f"current directory: {Path.cwd()}")
-    fp = str(audio_path.with_suffix('.mp3'))
+    fp = audio_path.with_suffix('.mp3')
     logging.debug(f"Targeting destination: {fp}")
 
     # convert the mp3
