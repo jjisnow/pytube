@@ -101,7 +101,10 @@ def downloader(*args, **kwargs):
 
         # In the event only audio, create HQ mp3
         if target_stream.type == 'audio':
+
             final_fp = make_mp3(audio_path)
+            # final_fp = make_ogg(audio_path)
+            # final_fp = mux_files(audio_path)
         else:
             final_fp = mux_files(audio_path, video_path, subtitle_path, videofps)
         cleanup_files(audio_path, video_path, subtitle_path)
@@ -263,7 +266,7 @@ def download_captions(yt, lang):
         return subt_fp
 
 
-def mux_files(audio_fp, video_fp, subt_fp=None, videofps=None):
+def mux_files(audio_fp, video_fp=None, subt_fp=None, videofps=None):
     '''mux file streams supplied'''
     logging.info("attempting to mix audio and video")
     # -y: global ie overwrite without asking
@@ -279,7 +282,7 @@ def mux_files(audio_fp, video_fp, subt_fp=None, videofps=None):
     elif audio_fp:
         final_fp = audio_fp
     else:
-        logging.error("")
+        logging.error("no audio or video file path supplied")
 
     final_fp = "".join((str(final_fp.with_suffix('')),
                         "-output",
@@ -320,7 +323,7 @@ def cleanup_files(audio_path, subtitle_path, video_path):
 
 
 def make_mp3(audio_path):
-    '''convert from a mkv file to an mp3'''
+    '''convert from a webm file to an mp3'''
     logging.debug(f"current directory: {Path.cwd()}")
     fp = audio_path.with_suffix('.mp3')
     logging.debug(f"Targeting destination: {fp}")
@@ -333,6 +336,25 @@ def make_mp3(audio_path):
     # -y : overwrite output files without asking
     cmd = f'ffmpeg -i "{audio_path}" ' \
         f'-c:a libmp3lame -q:a 0 ' \
+        f'"{fp}"'
+    logging.debug(f"Command to be run: {cmd}")
+    subprocess.run(cmd, shell=True, check=True)
+    fp = Path(fp)
+    return fp
+
+
+def make_ogg(audio_path):
+    '''convert from a webm file to an ogg'''
+    logging.debug(f"current directory: {Path.cwd()}")
+    fp = audio_path.with_suffix('.ogg')
+    logging.debug(f"Targeting destination: {fp}")
+
+    # convert the webm -> ogg
+    # -c:a copy : use the same audio codec
+    # -n : exit immediately if file exists
+    # -y : overwrite output files without asking
+    cmd = f'ffmpeg -i "{audio_path}" ' \
+        f'-c:a libopus -b:a 160k ' \
         f'"{fp}"'
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
