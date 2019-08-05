@@ -98,6 +98,9 @@ def downloader(*args, **kwargs):
 
         subtitle_path = download_captions(yt, arguments['--lang'])
         final_fp = mux_files(audio_path, subtitle_path, video_path, videofps)
+        # In the event only audio, create HQ mp3
+        if target_stream.type == 'audio':
+            final_fp = make_mp3(Path(final_fp))
         cleanup_files(audio_path, subtitle_path, video_path)
         logging.info(f"Final output file: {final_fp}")
 
@@ -311,6 +314,36 @@ def cleanup_files(audio_path, subtitle_path, video_path):
                 logging.error(f"Error code detected: {errors}")
         else:
             logging.debug(f'CLEANUP: no {k} file detected')
+
+
+def make_mp3(final_fp):
+    '''convert from a mkv file to an mp3'''
+    logging.debug(f"current directory: {Path.cwd()}")
+    fp = str(final_fp.with_suffix('.mp3'))
+    logging.debug(f"Targeting destination: {fp}")
+
+    # convert the mp3
+    # -i : input file name
+    # -c:a libmp3lame  : create mp3 file using lame codec
+    # -q:a 0   : highest variable audio quality
+    # -n : exit immediately if file exists
+    # -y : overwrite output files without asking
+    cmd = f'ffmpeg -i "{final_fp}" ' \
+          f'-c:a libmp3lame -q:a 0 ' \
+          f'"{fp}"'
+    logging.debug(f"Command to be run: {cmd}")
+    subprocess.run(cmd, shell=True, check=True)
+    logging.info(f"CLEANUP: deleting {final_fp}")
+    # check for errors
+    errors = os.remove(final_fp)
+    if not errors:
+        logging.info("Success!")
+    else:
+        logging.error(f"Error code detected: {errors}")
+    fp = Path(fp)
+
+    return fp
+
 
 
 if __name__ == '__main__':
