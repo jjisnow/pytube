@@ -99,12 +99,17 @@ def downloader(*args, **kwargs):
         if not target_stream.type == 'audio':
             subtitle_path = download_captions(yt, arguments['--lang'])
 
-        # In the event only audio, create HQ mp3
+        # In the event only audio, create HQ mp3 or aac file
         if target_stream.type == 'audio':
+            if (audio_path.suffix == '.webm' and target_stream.audio_codec == 'opus') \
+                    or (
+                    audio_path.suffix == '.mp4' and 'mp4' in target_stream.audio_codec):
+                final_fp = make_mp3(audio_path)  # the default
+                # final_fp = make_aac(audio_path)  # not supported by all platforms
+                # final_fp = make_ogg(audio_path)  # not supported by all platforms
+            else:
+                final_fp = mux_files(audio_path)
 
-            final_fp = make_mp3(audio_path)
-            # final_fp = make_ogg(audio_path)
-            # final_fp = mux_files(audio_path)
         else:
             final_fp = mux_files(audio_path, video_path, subtitle_path, videofps)
         cleanup_files(audio_path, video_path, subtitle_path)
@@ -328,7 +333,7 @@ def make_mp3(audio_path):
     fp = audio_path.with_suffix('.mp3')
     logging.debug(f"Targeting destination: {fp}")
 
-    # convert the mp3
+    # convert the file
     # -i : input file name
     # -c:a libmp3lame  : create mp3 file using lame codec
     # -q:a 0   : highest variable audio quality
@@ -355,6 +360,29 @@ def make_ogg(audio_path):
     # -y : overwrite output files without asking
     cmd = f'ffmpeg -i "{audio_path}" ' \
         f'-c:a libopus -b:a 160k ' \
+        f'"{fp}"'
+    logging.debug(f"Command to be run: {cmd}")
+    subprocess.run(cmd, shell=True, check=True)
+    fp = Path(fp)
+    return fp
+
+
+def make_aac(audio_path):
+    '''convert from a file to an aac'''
+    logging.debug(f"current directory: {Path.cwd()}")
+    fp = audio_path.with_suffix('.aac')
+    logging.debug(f"Targeting destination: {fp}")
+
+    # convert the file
+    # -i : input file name
+    # -c:a aac  : create aac file
+    # -q:a 0   : highest variable audio quality
+    # -profile:a aac_ltp : Long term prediction profile, is enabled by and will enable
+    # the aac_ltp option. Introduced in MPEG4.
+    # -n : exit immediately if file exists
+    # -y : overwrite output files without asking
+    cmd = f'ffmpeg -i "{audio_path}" ' \
+        f'-c:a aac -q:a 0 -profile:a aac_main ' \
         f'"{fp}"'
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
