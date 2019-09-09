@@ -4,7 +4,7 @@ already
 
 Usage:
   downloader.py [URL...] [--verbose | --quiet] [--itag value] [--lang string]
-  [--list]
+  [--list] [--duration t]
 
 Arguments:
   URL   individual websites to download video from
@@ -16,6 +16,7 @@ Options:
   -i, --itag value    The stream to download
   --lang string       The caption language to download [default: English]
   -l, --list          List streams and exit
+  -d, --duration t    Download t seconds
 
 """
 
@@ -34,6 +35,7 @@ import logging
 from docopt import docopt
 from tabulate import tabulate
 
+duration = None
 
 def timing(fn):
     '''Timing decorator for program'''
@@ -96,7 +98,8 @@ def downloader(*args, **kwargs):
                     f"unexpected file type: {target_stream.type}")
                 return 1
 
-        if not target_stream.type == 'audio':
+        # need to retime the captions if I'm to use them in shorter videos
+        if not target_stream.type == 'audio' and not duration:
             subtitle_path = download_captions(yt, arguments['--lang'])
 
         # In the event only audio, create HQ mp3 or aac file
@@ -129,6 +132,10 @@ def parse_arguments():
         log_level = logging.INFO
 
     arguments['log_level'] = log_level
+
+    # duration gets used at many points, hence global.
+    global duration
+    duration = arguments['--duration']
     return arguments
 
 
@@ -227,17 +234,30 @@ def download_file(download_target):
                       fp.suffix
                       ))
     logging.debug(f"Targeting destination: {fp}")
+    global duration
+    if duration:
+    # download the file with ffmpeg
+    # -ss : start point to download in HH:MM:SS.MILLISECONDS format if needed
+    # -t : duration to download in seconds
+    # -to: end point to download as above format. -t takes precedence
+    # NB: -ss before -i sets the -to origin to zero at the cut point
+    # -copyts: allows -to to refer to start of clip, no the cut point.
 
-    # download the file
+        logging.debug(f"attempting to download {duration} seconds of file")
+        cmd = f'ffmpeg -ss 0 -i "{download_target.url}" -t {duration} -c:v copy' \
+              f' -c:a copy "{fp}"'
+
+    # download the file with aria
     # -c : continue/resume downloads
     # -j : number of parallel downloads for 1 link
     # --optimize-concurrent-downloads=true: optimise speed
     # -x : max connections per server
     # -k : min split size
     # -s, --split=N: Download using N connections
-    cmd = f'aria2c --continue=true -j5 -x5 ' \
-        f'--optimize-concurrent-downloads=true ' \
-        f'-k 1M --split=5 -o "{fp}" "{download_target.url}"'
+    else:
+        cmd = f'aria2c --continue=true -j5 -x5 ' \
+            f'--optimize-concurrent-downloads=true ' \
+            f'-k 1M --split=5 -o "{fp}" "{download_target.url}"'
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
     fp = Path(fp)
