@@ -298,10 +298,10 @@ def mux_files(audio_fp, video_fp=None, subt_fp=None, videofps=None):
     subt_fp = '' if subt_fp is None else f'-i "{subt_fp}"'
     subt_text = '-c:s srt' if subt_fp else ''
     videofps_text = f'-r {videofps}' if videofps else ''
-
+    if Path(final_fp).is_file():
+        logging.error(f"{final_fp} already exists! Will overwrite...")
     cmd = f'ffmpeg -y {audio_fp_text} {video_fp_text} {subt_fp} ' \
         f'{videofps_text} -c:a copy -c:v copy {subt_text} "{final_fp}"'
-
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
     logging.info(f"Final muxed file: {final_fp}")
@@ -339,7 +339,9 @@ def make_mp3(audio_path):
     # -q:a 0   : highest variable audio quality
     # -n : exit immediately if file exists
     # -y : overwrite output files without asking
-    cmd = f'ffmpeg -i "{audio_path}" ' \
+    if Path(fp).is_file():
+        logging.error(f"{fp} already exists! Will overwrite...")
+    cmd = f'ffmpeg -y -i "{audio_path}" ' \
         f'-c:a libmp3lame -q:a 0 ' \
         f'"{fp}"'
     logging.debug(f"Command to be run: {cmd}")
@@ -358,7 +360,9 @@ def make_ogg(audio_path):
     # -c:a copy : use the same audio codec
     # -n : exit immediately if file exists
     # -y : overwrite output files without asking
-    cmd = f'ffmpeg -i "{audio_path}" ' \
+    if Path(fp).is_file():
+        logging.error(f"{fp} already exists! Will overwrite...")
+    cmd = f'ffmpeg -y -i "{audio_path}" ' \
         f'-c:a libopus -b:a 160k ' \
         f'"{fp}"'
     logging.debug(f"Command to be run: {cmd}")
@@ -381,7 +385,9 @@ def make_aac(audio_path):
     # the aac_ltp option. Introduced in MPEG4.
     # -n : exit immediately if file exists
     # -y : overwrite output files without asking
-    cmd = f'ffmpeg -i "{audio_path}" ' \
+    if Path(fp).is_file():
+        logging.error(f"{fp} already exists! Will overwrite...")
+    cmd = f'ffmpeg -y -i "{audio_path}" ' \
         f'-c:a aac -q:a 0 -profile:a aac_main ' \
         f'"{fp}"'
     logging.debug(f"Command to be run: {cmd}")

@@ -22,10 +22,8 @@ def base_command():
 def wildlife_clip(base_command):
     # uses a short 30s wildlife clip
     url = "https://www.youtube.com/watch?v=5DP5I8Gd6wY"
-
-    # youtube close caption demo
-    # TODO: reference size of videos downloaded for tests
-    # url = "https://www.youtube.com/watch?v=QRS8MkLhQmM"
+    # attempted to download a portion, but doesn't allow time slices
+    # url = "https://www.youtube.com/watch?v=5DP5I8Gd6wY&t=25s"
 
     # short video with non-safe filename defaults
     # url = "https://www.youtube.com/watch?v=BpaYqFd5S5c"
@@ -51,7 +49,7 @@ def check_expected(base_command, downloaded_expected, itag, size_expected):
     if downloaded_expected.is_file():
         os.remove(downloaded_expected)
     cmd = base_command + f" -i {str(itag)}"
-    subprocess.run(cmd, shell=True)
+    subprocess.run(cmd, shell=False)
     if all((downloaded_expected.is_file(),
             math.isclose(downloaded_expected.stat().st_size, size_expected,
                          rel_tol=0.01))):
@@ -79,15 +77,15 @@ def test_downloader_check_requirements_bad(args):
 
 
 def test_list(wildlife_clip):
-    assert subprocess.run(wildlife_clip + " 1 -l", shell=True)
+    assert subprocess.run(wildlife_clip + " -l", shell=False)
 
 
 def test_audio(wildlife_clip):
     # test for audio file only
     downloaded_expected = Path(
-        "Short wildlife video clip HD-audio-output.mkv")
+        "Short wildlife video clip HD-audio.mp3")
     itag = 249
-    size_expected = 224096
+    size_expected = 972285
     check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
 
 
@@ -111,9 +109,9 @@ def test_audio_captions(captions):
     # test for audio file only
     base_command = captions
     downloaded_expected = Path(
-        "YouTube Captions and Subtitles-audio-output.mkv")
+        "YouTube Captions and Subtitles-audio.mp3")
     itag = 249
-    size_expected = 550250
+    size_expected = 1911789
     check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
@@ -123,8 +121,8 @@ def test_combined_captions(captions):
     downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
     if downloaded_expected.is_file():
         os.remove(downloaded_expected)
-    itag = 17
-    size_expected = 1016003
+    itag = 278
+    size_expected = 2530819
     check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
@@ -133,7 +131,7 @@ def test_hq_mux(captions):
     base_command = captions
     downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
     itag = 243
-    size_expected = 4846884
+    size_expected = 4361905
     check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
