@@ -48,7 +48,7 @@ def captions(base_command):
 def check_expected(base_command, downloaded_expected, itag, size_expected):
     if downloaded_expected.is_file():
         os.remove(downloaded_expected)
-    cmd = base_command + f" -i {str(itag)}"
+    cmd = base_command + f" -i {str(itag)} -d 1"
     subprocess.run(cmd, shell=False)
     if all((downloaded_expected.is_file(),
             math.isclose(downloaded_expected.stat().st_size, size_expected,
@@ -85,7 +85,7 @@ def test_audio(wildlife_clip):
     downloaded_expected = Path(
         "Short wildlife video clip HD-audio.mp3")
     itag = 249
-    size_expected = 972285
+    size_expected = 27117
     check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
 
 
@@ -93,7 +93,7 @@ def test_combined(wildlife_clip):
     # test for low quality video file download
     downloaded_expected = Path("Short wildlife video clip HD-output.mkv")
     itag = 278
-    size_expected = 839401
+    size_expected = 37274
     check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
 
 
@@ -101,7 +101,7 @@ def test_hq_combined(wildlife_clip):
     # test for high quality combined video file
     downloaded_expected = Path("Short wildlife video clip HD-output.mkv")
     itag = 22
-    size_expected = 8974399
+    size_expected = 302828
     check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
 
 
@@ -111,7 +111,7 @@ def test_audio_captions(captions):
     downloaded_expected = Path(
         "YouTube Captions and Subtitles-audio.mp3")
     itag = 249
-    size_expected = 1911789
+    size_expected = 4365
     check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
@@ -122,7 +122,7 @@ def test_combined_captions(captions):
     if downloaded_expected.is_file():
         os.remove(downloaded_expected)
     itag = 278
-    size_expected = 2530819
+    size_expected = 21955
     check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
@@ -131,7 +131,7 @@ def test_hq_mux(captions):
     base_command = captions
     downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
     itag = 243
-    size_expected = 4361905
+    size_expected = 25147
     check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
@@ -141,7 +141,7 @@ def test_non_safe_file_title(base_command):
                              url,
                              ))
     itag = 278
-    cmd = base_command + f" -i {str(itag)}"
+    cmd = base_command + f" -i {str(itag)} -d 1"
     downloaded_expected = Path(
         'Adam Savages New One Day Builds T-Shirt!-output.mkv')
     if downloaded_expected.is_file():
