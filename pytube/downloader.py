@@ -170,9 +170,12 @@ def check_url(arguments):
     ''' parse the url and obtain one if none provided
     Use a provided link or the args provided
     '''
-    if len(arguments['URL']) == 0:
+    while len(arguments['URL']) == 0:
         link = input("Provide a youtube link to download: ")
         arguments['URL'].append(link)
+        if arguments['URL'][0] == '':
+            print("a link must be supplied!")
+            del arguments['URL'][0]
     logging.info(f"Final args: {arguments}")
 
     return arguments
