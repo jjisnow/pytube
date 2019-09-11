@@ -37,6 +37,7 @@ from tabulate import tabulate
 
 duration = None
 
+
 def timing(fn):
     '''Timing decorator for program'''
 
@@ -236,30 +237,42 @@ def download_file(download_target):
     logging.debug(f"Targeting destination: {fp}")
     global duration
     if duration:
-    # download the file with ffmpeg
-    # -ss : start point to download in HH:MM:SS.MILLISECONDS format if needed
-    # -t : duration to download in seconds
-    # -to: end point to download as above format. -t takes precedence
-    # NB: -ss before -i sets the -to origin to zero at the cut point
-    # -copyts: allows -to to refer to start of clip, no the cut point.
+        # download the file with ffmpeg
+        # -ss : start point to download in HH:MM:SS.MILLISECONDS format if needed
+        # -t : duration to download in seconds
+        # -to: end point to download as above format. -t takes precedence
+        # NB: -ss before -i sets the -to origin to zero at the cut point
+        # -copyts: allows -to to refer to start of clip, no the cut point.
 
         logging.debug(f"attempting to download {duration} seconds of file")
-        cmd = f'ffmpeg -ss 0 -i "{download_target.url}" -t {duration} -c:v copy' \
-              f' -c:a copy "{fp}"'
+        cmd = (f'ffmpeg',
+               '-ss', '0',
+               '-i', f'{download_target.url}',
+               '-t', f'{duration}',
+               '-c:v', 'copy',
+               '-c:a', 'copy',
+               f'{fp}')
 
-    # download the file with aria
-    # -c : continue/resume downloads
-    # -j : number of parallel downloads for 1 link
-    # --optimize-concurrent-downloads=true: optimise speed
-    # -x : max connections per server
-    # -k : min split size
-    # -s, --split=N: Download using N connections
     else:
-        cmd = f'aria2c --continue=true -j5 -x5 ' \
-            f'--optimize-concurrent-downloads=true ' \
-            f'-k 1M --split=5 -o "{fp}" "{download_target.url}"'
+        # download the file with aria
+        # -c : continue/resume downloads
+        # -j : number of parallel downloads for 1 link
+        # --optimize-concurrent-downloads=true: optimise speed
+        # -x : max connections per server
+        # -k : min split size
+        # -s, --split=N: Download using N connections
+
+        cmd = ('aria2c',
+               '--continue=true',
+               '-j5', '-x5',
+               '--optimize-concurrent-downloads=true',
+               '-k', '1M',
+               '--split=5',
+               '-o', f'{fp}',
+               f'{download_target.url}')
+
     logging.debug(f"Command to be run: {cmd}")
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=False, check=True)
     fp = Path(fp)
     logging.info(f"Final {download_target.type} file: {fp}")
     return fp
