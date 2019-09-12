@@ -326,17 +326,35 @@ def mux_files(audio_fp, video_fp=None, subt_fp=None, videofps=None):
                         "-output",
                         ".mkv"
                         ))
-    audio_fp_text = f'-i "{audio_fp}"' if audio_fp else ''
-    video_fp_text = f'-i "{video_fp}"' if video_fp else ''
-    subt_fp = '' if subt_fp is None else f'-i "{subt_fp}"'
-    subt_text = '-c:s srt' if subt_fp else ''
-    videofps_text = f'-r {videofps}' if videofps else ''
+    audio_fp_text = ('-i', f'{audio_fp}') if audio_fp else ()
+    video_fp_text = ('-i', f'{video_fp}') if video_fp else ()
+    subt_fp = () if subt_fp is None else ('-i', f'{subt_fp}')
+    subt_text = ('-c:s', 'srt') if subt_fp else ()
+    videofps_text = ('-r', f'{videofps}') if videofps else ()
     if Path(final_fp).is_file():
         logging.error(f"{final_fp} already exists! Will overwrite...")
-    cmd = f'ffmpeg -y {audio_fp_text} {video_fp_text} {subt_fp} ' \
-        f'{videofps_text} -c:a copy -c:v copy {subt_text} "{final_fp}"'
+    # cmd = ('ffmpeg',
+    #        '-y',
+    #        f'{audio_fp_text}',
+    #        f'{video_fp_text}',
+    #        f'{subt_fp}',
+    #        f'{videofps_text}',
+    #        '-c:a', 'copy',
+    #        '-c:v', 'copy',
+    #        f'{subt_text}',
+    #        f'{final_fp}')
+    cmd = ('ffmpeg',
+           '-y',
+           *audio_fp_text,
+           *video_fp_text,
+           *subt_fp,
+           *videofps_text,
+           '-c:a', 'copy',
+           '-c:v', 'copy',
+           *subt_text,
+           f'{final_fp}')
     logging.debug(f"Command to be run: {cmd}")
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=False, check=True)
     logging.info(f"Final muxed file: {final_fp}")
 
     return final_fp
@@ -374,11 +392,14 @@ def make_mp3(audio_path):
     # -y : overwrite output files without asking
     if Path(fp).is_file():
         logging.error(f"{fp} already exists! Will overwrite...")
-    cmd = f'ffmpeg -y -i "{audio_path}" ' \
-        f'-c:a libmp3lame -q:a 0 ' \
-        f'"{fp}"'
+    cmd = ('ffmpeg',
+           '-y',
+           '-i', f'{audio_path}',
+           '-c:a', 'libmp3lame',
+           '-q:a', '0',
+           f'{fp}')
     logging.debug(f"Command to be run: {cmd}")
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=False, check=True)
     fp = Path(fp)
     return fp
 
@@ -395,11 +416,15 @@ def make_ogg(audio_path):
     # -y : overwrite output files without asking
     if Path(fp).is_file():
         logging.error(f"{fp} already exists! Will overwrite...")
-    cmd = f'ffmpeg -y -i "{audio_path}" ' \
-        f'-c:a libopus -b:a 160k ' \
-        f'"{fp}"'
+    cmd = ('ffmpeg',
+           '-y',
+           '-i', f'{audio_path}',
+           '-c:a', 'libopus',
+           '-b:a', '160k',
+           f'{fp}')
+
     logging.debug(f"Command to be run: {cmd}")
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=False, check=True)
     fp = Path(fp)
     return fp
 
@@ -420,11 +445,15 @@ def make_aac(audio_path):
     # -y : overwrite output files without asking
     if Path(fp).is_file():
         logging.error(f"{fp} already exists! Will overwrite...")
-    cmd = f'ffmpeg -y -i "{audio_path}" ' \
-        f'-c:a aac -q:a 0 -profile:a aac_main ' \
-        f'"{fp}"'
+    cmd = ('ffmpeg',
+           '-y',
+           '-i', f'{audio_path}',
+           '-c:a', 'aac',
+           '-q:a', '0',
+           '-profile:a', 'aac_main'
+           f'{fp}')
     logging.debug(f"Command to be run: {cmd}")
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=False, check=True)
     fp = Path(fp)
     return fp
 
