@@ -37,6 +37,7 @@ from tabulate import tabulate
 
 duration = None
 
+
 def timing(fn):
     '''Timing decorator for program'''
 
@@ -239,30 +240,42 @@ def download_file(download_target):
     logging.debug(f"Targeting destination: {fp}")
     global duration
     if duration:
-    # download the file with ffmpeg
-    # -ss : start point to download in HH:MM:SS.MILLISECONDS format if needed
-    # -t : duration to download in seconds
-    # -to: end point to download as above format. -t takes precedence
-    # NB: -ss before -i sets the -to origin to zero at the cut point
-    # -copyts: allows -to to refer to start of clip, no the cut point.
+        # download the file with ffmpeg
+        # -ss : start point to download in HH:MM:SS.MILLISECONDS format if needed
+        # -t : duration to download in seconds
+        # -to: end point to download as above format. -t takes precedence
+        # NB: -ss before -i sets the -to origin to zero at the cut point
+        # -copyts: allows -to to refer to start of clip, no the cut point.
 
         logging.debug(f"attempting to download {duration} seconds of file")
-        cmd = f'ffmpeg -ss 0 -i "{download_target.url}" -t {duration} -c:v copy' \
-              f' -c:a copy "{fp}"'
+        cmd = (f'ffmpeg',
+               '-ss', '0',
+               '-i', f'{download_target.url}',
+               '-t', f'{duration}',
+               '-c:v', 'copy',
+               '-c:a', 'copy',
+               f'{fp}')
 
-    # download the file with aria
-    # -c : continue/resume downloads
-    # -j : number of parallel downloads for 1 link
-    # --optimize-concurrent-downloads=true: optimise speed
-    # -x : max connections per server
-    # -k : min split size
-    # -s, --split=N: Download using N connections
     else:
-        cmd = f'aria2c --continue=true -j5 -x5 ' \
-            f'--optimize-concurrent-downloads=true ' \
-            f'-k 1M --split=5 -o "{fp}" "{download_target.url}"'
+        # download the file with aria
+        # -c : continue/resume downloads
+        # -j : number of parallel downloads for 1 link
+        # --optimize-concurrent-downloads=true: optimise speed
+        # -x : max connections per server
+        # -k : min split size
+        # -s, --split=N: Download using N connections
+
+        cmd = ('aria2c',
+               '--continue=true',
+               '-j5', '-x5',
+               '--optimize-concurrent-downloads=true',
+               '-k', '1M',
+               '--split=5',
+               '-o', f'{fp}',
+               f'{download_target.url}')
+
     logging.debug(f"Command to be run: {cmd}")
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=False, check=True)
     fp = Path(fp)
     logging.info(f"Final {download_target.type} file: {fp}")
     return fp
@@ -316,17 +329,26 @@ def mux_files(audio_fp, video_fp=None, subt_fp=None, videofps=None):
                         "-output",
                         ".mkv"
                         ))
-    audio_fp_text = f'-i "{audio_fp}"' if audio_fp else ''
-    video_fp_text = f'-i "{video_fp}"' if video_fp else ''
-    subt_fp = '' if subt_fp is None else f'-i "{subt_fp}"'
-    subt_text = '-c:s srt' if subt_fp else ''
-    videofps_text = f'-r {videofps}' if videofps else ''
+    audio_fp_text = ('-i', f'{audio_fp}') if audio_fp else ()
+    video_fp_text = ('-i', f'{video_fp}') if video_fp else ()
+    subt_fp = () if subt_fp is None else ('-i', f'{subt_fp}')
+    subt_text = ('-c:s', 'srt') if subt_fp else ()
+    videofps_text = ('-r', f'{videofps}') if videofps else ()
     if Path(final_fp).is_file():
         logging.error(f"{final_fp} already exists! Will overwrite...")
-    cmd = f'ffmpeg -y {audio_fp_text} {video_fp_text} {subt_fp} ' \
-        f'{videofps_text} -c:a copy -c:v copy {subt_text} "{final_fp}"'
+
+    cmd = ('ffmpeg',
+           '-y',
+           *audio_fp_text,
+           *video_fp_text,
+           *subt_fp,
+           *videofps_text,
+           '-c:a', 'copy',
+           '-c:v', 'copy',
+           *subt_text,
+           f'{final_fp}')
     logging.debug(f"Command to be run: {cmd}")
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=False, check=True)
     logging.info(f"Final muxed file: {final_fp}")
 
     return final_fp
@@ -364,11 +386,14 @@ def make_mp3(audio_path):
     # -y : overwrite output files without asking
     if Path(fp).is_file():
         logging.error(f"{fp} already exists! Will overwrite...")
-    cmd = f'ffmpeg -y -i "{audio_path}" ' \
-        f'-c:a libmp3lame -q:a 0 ' \
-        f'"{fp}"'
+    cmd = ('ffmpeg',
+           '-y',
+           '-i', f'{audio_path}',
+           '-c:a', 'libmp3lame',
+           '-q:a', '0',
+           f'{fp}')
     logging.debug(f"Command to be run: {cmd}")
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=False, check=True)
     fp = Path(fp)
     return fp
 
@@ -385,11 +410,15 @@ def make_ogg(audio_path):
     # -y : overwrite output files without asking
     if Path(fp).is_file():
         logging.error(f"{fp} already exists! Will overwrite...")
-    cmd = f'ffmpeg -y -i "{audio_path}" ' \
-        f'-c:a libopus -b:a 160k ' \
-        f'"{fp}"'
+    cmd = ('ffmpeg',
+           '-y',
+           '-i', f'{audio_path}',
+           '-c:a', 'libopus',
+           '-b:a', '160k',
+           f'{fp}')
+
     logging.debug(f"Command to be run: {cmd}")
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=False, check=True)
     fp = Path(fp)
     return fp
 
@@ -410,11 +439,15 @@ def make_aac(audio_path):
     # -y : overwrite output files without asking
     if Path(fp).is_file():
         logging.error(f"{fp} already exists! Will overwrite...")
-    cmd = f'ffmpeg -y -i "{audio_path}" ' \
-        f'-c:a aac -q:a 0 -profile:a aac_main ' \
-        f'"{fp}"'
+    cmd = ('ffmpeg',
+           '-y',
+           '-i', f'{audio_path}',
+           '-c:a', 'aac',
+           '-q:a', '0',
+           '-profile:a', 'aac_main'
+           f'{fp}')
     logging.debug(f"Command to be run: {cmd}")
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=False, check=True)
     fp = Path(fp)
     return fp
 
