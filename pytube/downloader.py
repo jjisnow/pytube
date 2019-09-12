@@ -333,16 +333,7 @@ def mux_files(audio_fp, video_fp=None, subt_fp=None, videofps=None):
     videofps_text = ('-r', f'{videofps}') if videofps else ()
     if Path(final_fp).is_file():
         logging.error(f"{final_fp} already exists! Will overwrite...")
-    # cmd = ('ffmpeg',
-    #        '-y',
-    #        f'{audio_fp_text}',
-    #        f'{video_fp_text}',
-    #        f'{subt_fp}',
-    #        f'{videofps_text}',
-    #        '-c:a', 'copy',
-    #        '-c:v', 'copy',
-    #        f'{subt_text}',
-    #        f'{final_fp}')
+
     cmd = ('ffmpeg',
            '-y',
            *audio_fp_text,
