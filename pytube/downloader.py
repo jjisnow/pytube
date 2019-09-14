@@ -35,8 +35,6 @@ import logging
 from docopt import docopt
 from tabulate import tabulate
 
-duration = None
-
 
 def timing(fn):
     '''Timing decorator for program'''
@@ -77,22 +75,23 @@ def downloader(*args, **kwargs):
         video_path, audio_path, subtitle_path, videofps = [None] * 4
         if not target_stream.includes_audio_track:
             logging.info("downloading video first......")
-            video_path = download_file(target_stream)
+            video_path = download_file(target_stream, duration=arguments['--duration'])
             videofps = target_stream.fps
 
             logging.info("downloading audio as well!")
             audio_target = yt.streams.filter(only_audio=True).first()
-            audio_path = download_file(audio_target)
+            audio_path = download_file(audio_target, duration=arguments['--duration'])
 
         else:
             logging.info(f"downloading {target_stream.type} ONLY")
             if target_stream.type == 'video':
-                video_path = download_file(target_stream)
+                video_path = download_file(target_stream,
+                                           duration=arguments['--duration'])
                 videofps = target_stream.fps
 
             elif target_stream.type == 'audio':
                 audio_target = target_stream
-                audio_path = download_file(audio_target)
+                audio_path = download_file(audio_target, duration=arguments['--duration'])
 
             else:
                 logging.critical(
@@ -134,9 +133,6 @@ def parse_arguments():
 
     arguments['log_level'] = log_level
 
-    # duration gets used at many points, hence global.
-    global duration
-    duration = arguments['--duration']
     return arguments
 
 
@@ -225,7 +221,7 @@ def get_itag(arguments):
     return itag
 
 
-def download_file(download_target):
+def download_file(download_target, duration=None):
     '''download stream given a download_target'''
     logging.debug(f"current directory: {Path.cwd()}")
     logging.info(f"Downloading itag: {download_target.itag}")
@@ -238,7 +234,6 @@ def download_file(download_target):
                       fp.suffix
                       ))
     logging.debug(f"Targeting destination: {fp}")
-    global duration
     if duration:
         # download the file with ffmpeg
         # -ss : start point to download in HH:MM:SS.MILLISECONDS format if needed
@@ -445,7 +440,7 @@ def make_aac(audio_path):
            '-c:a', 'aac',
            '-q:a', '0',
            '-profile:a', 'aac_main'
-           f'{fp}')
+                         f'{fp}')
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=False, check=True)
     fp = Path(fp)
