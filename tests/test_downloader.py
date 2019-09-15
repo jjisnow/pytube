@@ -22,8 +22,6 @@ def base_command():
 def wildlife_clip(base_command):
     # uses a short 30s wildlife clip
     url = "https://www.youtube.com/watch?v=5DP5I8Gd6wY"
-    # attempted to download a portion, but doesn't allow time slices
-    # url = "https://www.youtube.com/watch?v=5DP5I8Gd6wY&t=25s"
 
     # short video with non-safe filename defaults
     # url = "https://www.youtube.com/watch?v=BpaYqFd5S5c"
@@ -32,6 +30,17 @@ def wildlife_clip(base_command):
                         url,
                         ))
     return command
+
+@pytest.fixture
+def calm_owl_clip(base_command):
+    # 6 second calm owl clip
+    url = "https://www.youtube.com/watch?v=FBgLytbB-uE"
+
+    command = " ".join((base_command,
+                        url,
+                        ))
+    return command
+
 
 
 @pytest.fixture
@@ -97,12 +106,12 @@ def test_combined(wildlife_clip):
     check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
 
 
-def test_hq_combined(wildlife_clip):
+def test_hq_combined(calm_owl_clip):
     # test for high quality combined video file
-    downloaded_expected = Path("Short wildlife video clip HD-output.mkv")
+    downloaded_expected = Path("Calm Owl-output.mkv")
     itag = 22
-    size_expected = 302828
-    check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
+    size_expected = 161909
+    check_expected(calm_owl_clip, downloaded_expected, itag, size_expected)
 
 
 def test_audio_captions(captions):
