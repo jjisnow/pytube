@@ -1,10 +1,10 @@
 """ Downloader of video website links.
 Will download video and mux with audio, or audio only, or video with audio
-already
+already. It will also download and retime caption subtitles using pysrt.
 
 Usage:
   downloader.py [URL...] [--verbose | --quiet] [--itag value] [--lang string]
-  [--list] [--duration t] [--start s]
+  [--list] [--duration HH:MM:SS] [--start HH:MM:SS]
 
 Arguments:
   URL   individual websites to download video from
@@ -16,11 +16,11 @@ Options:
   -i, --itag value    The stream to download
   --lang string       The caption language to download [default: English]
   -l, --list          List streams and exit
-  -d, --duration t    Download t seconds
-  -s, --start s       Start download at s seconds
+  -d, --duration t    Download t seconds in HH:MM:SS
+  -s, --start s       Start download at HH:MM:SS seconds
 
 """
-import datetime
+
 import os
 import shutil
 from functools import wraps
@@ -238,6 +238,8 @@ def download_file(download_target, duration=None, start=None):
     fp = Path(download_target.default_filename)
     if start == None:
         start = '0'
+    else:
+        start = strp_time(start)
     if download_target.type == 'audio':
         fp = ''.join((str(fp.with_suffix('').name),
                       "-audio",
@@ -245,6 +247,7 @@ def download_file(download_target, duration=None, start=None):
                       ))
     logging.debug(f"Targeting destination: {fp}")
     if duration:
+        duration = strp_time(duration)
         # download the file with ffmpeg
         # -ss : start point to download in HH:MM:SS.MILLISECONDS format if needed
         # -t : duration to download in seconds
@@ -315,12 +318,26 @@ def download_captions(yt, lang='English', duration=None, start=None):
     if start or duration:
         subs = pysrt.open(subt_fp)
         if start:
+            start = strp_time(start)
             subs.shift(seconds=-int(start))
         part = subs.slice(starts_after={'milliseconds': -1})
         if duration:
-            part = part.slice(ends_after=-int(duration))
+            duration = strp_time(duration)
+            part = part.slice(ends_before={'seconds':-int(duration)})
         part.save(subt_fp)
     return subt_fp
+
+
+def strp_time(time_str):
+    ''' returns corrected number of seconds given ':' string'''
+    if ':' not in time_str:
+        return time_str
+    else:
+        int_secs = 0
+        time_parts = time_str.split(':')
+        for i, n in enumerate(reversed(time_parts)):
+            int_secs += 60 ** i * round(float(n))
+        return str(int_secs)
 
 
 def mux_files(audio_fp, video_fp=None, subt_fp=None, videofps=None):
