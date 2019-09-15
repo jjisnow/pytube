@@ -254,6 +254,7 @@ def download_file(download_target, duration=None, start=None):
 
         logging.debug(f"attempting to download {duration} seconds of file")
         cmd = (f'ffmpeg',
+               '-y',
                '-ss', f'{start}',
                '-i', f'{download_target.url}',
                '-t', f'{duration}',
@@ -313,7 +314,8 @@ def download_captions(yt, lang='English', duration=None, start=None):
     # retime the subtitles
     if start or duration:
         subs = pysrt.open(subt_fp)
-        subs.shift(seconds=-int(start))
+        if start:
+            subs.shift(seconds=-int(start))
         part = subs.slice(starts_after={'milliseconds': -1})
         if duration:
             part = part.slice(ends_after=-int(duration))
