@@ -20,6 +20,7 @@ Options:
   -s, --start s       Start download at [[HH:]MM:]SS[.milliseconds]
 
 """
+import datetime
 import math
 import os
 import shutil
@@ -46,8 +47,9 @@ def timing(fn):
         time_start = time.time()
         result = fn(*args, **kw)
         time_end = time.time()
+        run_time = time_end - time_start
         print(f'function:{fn.__name__} args:[{args}, {kw}]'
-              f'--- {time_end - time_start:2.2f} sec ---')
+              f' --- {datetime.timedelta(seconds=run_time)} sec --- ')
         return result
 
     return wrap
