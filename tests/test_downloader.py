@@ -146,6 +146,6 @@ def test_non_safe_file_title(base_command):
         'Adam Savages New One Day Builds T-Shirt!-output.mkv')
     if downloaded_expected.is_file():
         os.remove(downloaded_expected)
-    exit_code = subprocess.run(cmd, shell=True)
+    exit_code = subprocess.run(cmd, shell=False)
     os.remove(downloaded_expected)
     assert exit_code.returncode == 0

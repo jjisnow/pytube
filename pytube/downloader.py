@@ -240,12 +240,11 @@ def download_file(download_target, duration=None, start=None):
     fp = Path(download_target.default_filename)
     if start == None:
         start = '0'
-    else:
-        if download_target.type == 'audio':
-            fp = ''.join((str(fp.with_suffix('').name),
-                          "-audio",
-                          fp.suffix
-                          ))
+    if download_target.type == 'audio':
+        fp = ''.join((str(fp.with_suffix('').name),
+                      "-audio",
+                      fp.suffix
+                      ))
     logging.debug(f"Targeting destination: {fp}")
     if duration:
         # download the file with ffmpeg
@@ -328,6 +327,10 @@ def download_captions(yt, lang='English', duration=None, start=None):
             part = part.slice(ends_before={'seconds'     : math.trunc(duration),
                                            'milliseconds': math.trunc(
                                                (duration % 1) * 1000)})
+        if len(part) < 1:
+            logging.info(f'No valid subtitles left, removing {subt_fp} file')
+            os.remove(subt_fp)
+            return None
         part.save(subt_fp)
     return subt_fp
 
