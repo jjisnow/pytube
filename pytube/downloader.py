@@ -4,7 +4,7 @@ already. It will also download and retime caption subtitles using pysrt.
 
 Usage:
   downloader.py [URL...] [--verbose | --quiet] [--itag value] [--lang string]
-  [--list] [--duration HH:MM:SS] [--start HH:MM:SS]
+  [--list] [--duration HH:MM:SS.milliseconds] [--start HH:MM:SS.milliseconds]
 
 Arguments:
   URL   individual websites to download video from
@@ -16,8 +16,8 @@ Options:
   -i, --itag value    The stream to download
   --lang string       The caption language to download [default: English]
   -l, --list          List streams and exit
-  -d, --duration t    Download t seconds in HH:MM:SS
-  -s, --start s       Start download at HH:MM:SS seconds
+  -d, --duration t    Download [[HH:]MM:]SS[.milliseconds] of clip
+  -s, --start s       Start download at [[HH:]MM:]SS[.milliseconds]
 
 """
 import math
