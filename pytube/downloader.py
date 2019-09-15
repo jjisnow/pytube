@@ -20,7 +20,7 @@ Options:
   -s, --start s       Start download at HH:MM:SS seconds
 
 """
-
+import math
 import os
 import shutil
 from functools import wraps
@@ -230,7 +230,9 @@ def get_itag(arguments):
 
 
 def download_file(download_target, duration=None, start=None):
-    '''download stream given a download_target'''
+    '''download stream given a download_target.
+    Note that ffmpeg already has a HH:MM:SS.ms specification limited to 2 digits for
+    HH, MM and SS'''
     logging.debug(f"current directory: {Path.cwd()}")
     logging.info(f"Downloading itag: {download_target.itag}")
     logging.info(f"Download url: {download_target.url}")
@@ -239,15 +241,13 @@ def download_file(download_target, duration=None, start=None):
     if start == None:
         start = '0'
     else:
-        start = strp_time(start)
-    if download_target.type == 'audio':
-        fp = ''.join((str(fp.with_suffix('').name),
-                      "-audio",
-                      fp.suffix
-                      ))
+        if download_target.type == 'audio':
+            fp = ''.join((str(fp.with_suffix('').name),
+                          "-audio",
+                          fp.suffix
+                          ))
     logging.debug(f"Targeting destination: {fp}")
     if duration:
-        duration = strp_time(duration)
         # download the file with ffmpeg
         # -ss : start point to download in HH:MM:SS.MILLISECONDS format if needed
         # -t : duration to download in seconds
@@ -266,7 +266,7 @@ def download_file(download_target, duration=None, start=None):
                f'{fp}')
 
     else:
-        # download the file with aria
+        # download the entire file with aria
         # -c : continue/resume downloads
         # -j : number of parallel downloads for 1 link
         # --optimize-concurrent-downloads=true: optimise speed
@@ -316,14 +316,18 @@ def download_captions(yt, lang='English', duration=None, start=None):
 
     # retime the subtitles
     if start or duration:
+        logging.info(f'retiming subtitles {subt_fp}')
         subs = pysrt.open(subt_fp)
         if start:
-            start = strp_time(start)
-            subs.shift(seconds=-int(start))
+            start = float(strp_time(start))
+            subs.shift(seconds=-math.trunc(start),
+                       milliseconds=-math.trunc((start % 1) * 1000))
         part = subs.slice(starts_after={'milliseconds': -1})
         if duration:
-            duration = strp_time(duration)
-            part = part.slice(ends_before={'seconds':-int(duration)})
+            duration = float(strp_time(duration))
+            part = part.slice(ends_before={'seconds'     : math.trunc(duration),
+                                           'milliseconds': math.trunc(
+                                               (duration % 1) * 1000)})
         part.save(subt_fp)
     return subt_fp
 
@@ -333,11 +337,11 @@ def strp_time(time_str):
     if ':' not in time_str:
         return time_str
     else:
-        int_secs = 0
+        secs = 0
         time_parts = time_str.split(':')
         for i, n in enumerate(reversed(time_parts)):
-            int_secs += 60 ** i * round(float(n))
-        return str(int_secs)
+            secs += 60 ** i * float(n)
+        return str(secs)
 
 
 def mux_files(audio_fp, video_fp=None, subt_fp=None, videofps=None):
