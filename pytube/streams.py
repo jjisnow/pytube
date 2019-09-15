@@ -20,7 +20,6 @@ from pytube.helpers import safe_filename
 from pytube.itags import get_format_profile
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
 
 
 class Stream(object):
@@ -42,18 +41,18 @@ class Stream(object):
         # (Borg pattern).
         self._monostate = monostate
 
-        self.abr = None  # average bitrate (audio streams only)
-        self.fps = None  # frames per second (video streams only)
+        self.abr = None   # average bitrate (audio streams only)
+        self.fps = None   # frames per second (video streams only)
         self.itag = None  # stream format id (youtube nomenclature)
-        self.res = None  # resolution (e.g.: 480p, 720p, 1080p)
-        self.url = None  # signed download url
+        self.res = None   # resolution (e.g.: 480p, 720p, 1080p)
+        self.url = None   # signed download url
 
         self._filesize = None  # filesize in bytes
         self.mime_type = None  # content identifier (e.g.: video/mp4)
-        self.type = None  # the part of the mime before the slash
-        self.subtype = None  # the part of the mime after the slash
+        self.type = None       # the part of the mime before the slash
+        self.subtype = None    # the part of the mime after the slash
 
-        self.codecs = []  # audio/video encoders (e.g.: vp8, mp4a)
+        self.codecs = []         # audio/video encoders (e.g.: vp8, mp4a)
         self.audio_codec = None  # audio codec of the stream (e.g.: vorbis)
         self.video_codec = None  # video codec of the stream (e.g.: vp8)
 
@@ -166,6 +165,27 @@ class Stream(object):
         return self._filesize
 
     @property
+    def title(self):
+        """Get title of video
+
+        :rtype: str
+        :returns:
+            Youtube video title
+        """
+        player_config_args = self.player_config_args or {}
+
+        if 'title' in player_config_args:
+            return player_config_args['title']
+
+        details = self.player_config_args.get(
+            'player_response', {}).get('videoDetails', {})
+
+        if 'title' in details:
+            return details['title']
+
+        return 'Unknown YouTube Video Title'
+
+    @property
     def default_filename(self):
         """Generate filename based on the video title.
 
@@ -173,8 +193,8 @@ class Stream(object):
         :returns:
             An os file system compatible filename.
         """
-        title = self.player_config_args['player_response']['videoDetails']['title']
-        filename = safe_filename(title)
+
+        filename = safe_filename(self.title)
         return '{filename}.{s.subtype}'.format(filename=filename, s=self)
 
     def download(self, output_path=None, filename=None, filename_prefix=None):
@@ -206,11 +226,11 @@ class Stream(object):
         filename = filename or self.default_filename
 
         if filename_prefix:
-            filename = '{prefix}{filename}' \
+            filename = '{prefix}{filename}'\
                 .format(
-                prefix=safe_filename(filename_prefix),
-                filename=filename,
-            )
+                    prefix=safe_filename(filename_prefix),
+                    filename=filename,
+                )
 
         # file path
         fp = os.path.join(output_path, filename)
@@ -219,8 +239,6 @@ class Stream(object):
             'downloading (%s total bytes) file to %s',
             self.filesize, fp,
         )
-
-        logging.info("Downloading url: {}".format(self.url))
 
         with open(fp, 'wb') as fh:
             for chunk in request.get(self.url, streaming=True):
@@ -276,7 +294,7 @@ class Stream(object):
             'download progress\n%s',
             pprint.pformat(
                 {
-                    'chunk_size'     : len(chunk),
+                    'chunk_size': len(chunk),
                     'bytes_remaining': bytes_remaining,
                 }, indent=2,
             ),
