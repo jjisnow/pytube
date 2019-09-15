@@ -4,7 +4,7 @@ already
 
 Usage:
   downloader.py [URL...] [--verbose | --quiet] [--itag value] [--lang string]
-  [--list] [--duration t]
+  [--list] [--duration t] [--start s]
 
 Arguments:
   URL   individual websites to download video from
@@ -17,16 +17,18 @@ Options:
   --lang string       The caption language to download [default: English]
   -l, --list          List streams and exit
   -d, --duration t    Download t seconds
+  -s, --start s       Start download at s seconds
 
 """
-
+import datetime
 import os
 import shutil
-import sys
 from functools import wraps
 from pprint import pformat
 
 import time
+
+import pysrt
 
 from pytube import YouTube
 import subprocess
@@ -75,23 +77,27 @@ def downloader(*args, **kwargs):
         video_path, audio_path, subtitle_path, videofps = [None] * 4
         if not target_stream.includes_audio_track:
             logging.info("downloading video first......")
-            video_path = download_file(target_stream, duration=arguments['--duration'])
+            video_path = download_file(target_stream, duration=arguments['--duration'],
+                                       start=arguments['--start'])
             videofps = target_stream.fps
 
             logging.info("downloading audio as well!")
             audio_target = yt.streams.filter(only_audio=True).first()
-            audio_path = download_file(audio_target, duration=arguments['--duration'])
+            audio_path = download_file(audio_target, duration=arguments['--duration'],
+                                       start=arguments['--start'])
 
         else:
             logging.info(f"downloading {target_stream.type} ONLY")
             if target_stream.type == 'video':
                 video_path = download_file(target_stream,
-                                           duration=arguments['--duration'])
+                                           duration=arguments['--duration'],
+                                           start=arguments['--start'])
                 videofps = target_stream.fps
 
             elif target_stream.type == 'audio':
                 audio_target = target_stream
-                audio_path = download_file(audio_target, duration=arguments['--duration'])
+                audio_path = download_file(audio_target, duration=arguments['--duration'],
+                                           start=arguments['--start'])
 
             else:
                 logging.critical(
@@ -99,8 +105,10 @@ def downloader(*args, **kwargs):
                 return 1
 
         # need to retime the captions if I'm to use them in shorter videos
-        if not target_stream.type == 'audio' and not duration:
-            subtitle_path = download_captions(yt, arguments['--lang'])
+        if not target_stream.type == 'audio':
+            subtitle_path = download_captions(yt, lang=arguments['--lang'],
+                                              duration=arguments['--duration'],
+                                              start=arguments['--start'])
 
         # In the event only audio, create HQ mp3 or aac file
         if target_stream.type == 'audio':
@@ -221,13 +229,15 @@ def get_itag(arguments):
     return itag
 
 
-def download_file(download_target, duration=None):
+def download_file(download_target, duration=None, start=None):
     '''download stream given a download_target'''
     logging.debug(f"current directory: {Path.cwd()}")
     logging.info(f"Downloading itag: {download_target.itag}")
     logging.info(f"Download url: {download_target.url}")
 
     fp = Path(download_target.default_filename)
+    if start == None:
+        start = '0'
     if download_target.type == 'audio':
         fp = ''.join((str(fp.with_suffix('').name),
                       "-audio",
@@ -244,7 +254,7 @@ def download_file(download_target, duration=None):
 
         logging.debug(f"attempting to download {duration} seconds of file")
         cmd = (f'ffmpeg',
-               '-ss', '0',
+               '-ss', f'{start}',
                '-i', f'{download_target.url}',
                '-t', f'{duration}',
                '-c:v', 'copy',
@@ -276,7 +286,7 @@ def download_file(download_target, duration=None):
     return fp
 
 
-def download_captions(yt, lang):
+def download_captions(yt, lang='English', duration=None, start=None):
     i = None
     captions = list(enumerate(yt.captions.all()))
     captions_string = pformat(captions)
@@ -299,7 +309,16 @@ def download_captions(yt, lang):
         logging.debug(f'Writing {subt_fp}')
         lines = yt.captions.captions[i].generate_srt_captions()
         f.write(lines)
-        return subt_fp
+
+    # retime the subtitles
+    if start or duration:
+        subs = pysrt.open(subt_fp)
+        subs.shift(seconds=-int(start))
+        part = subs.slice(starts_after={'milliseconds': -1})
+        if duration:
+            part = part.slice(ends_after=-int(duration))
+        part.save(subt_fp)
+    return subt_fp
 
 
 def mux_files(audio_fp, video_fp=None, subt_fp=None, videofps=None):
