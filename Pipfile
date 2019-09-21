@@ -4,6 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+tabulate = "*"
+pysrt = "*"
+docopt = "*"
 
 [dev-packages]
 "flake8" = "*"
@@ -19,6 +22,7 @@ bumpversion = "*"
 coveralls = "*"
 twine = "*"
 more-itertools = "==5.0.0"
+pytest-xdist = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"

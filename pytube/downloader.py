@@ -47,7 +47,7 @@ def timing(fn):
         result = fn(*args, **kw)
         time_end = time.time()
         print(f'function:{fn.__name__} args:[{args}, {kw}]'
-              f'--- {time_end - time_start:2.2f} sec ---')
+              f'--- {time_end - time_start:.2f} sec ---')
         return result
 
     return wrap
@@ -66,12 +66,13 @@ def downloader(*args, **kwargs):
     for file in arguments['URL']:
         logging.debug(f"Parsing url: {file}")
         yt = YouTube(file)
-        parse_streams(yt.streams.all())
+        streams = yt.streams
+        parse_streams(streams.all())
         if arguments['--list']:
             return 0
 
         itag = get_itag(arguments)
-        target_stream = yt.streams.get_by_itag(itag)
+        target_stream = streams.get_by_itag(itag)
 
         logging.info("DOWNLOADING:")
         video_path, audio_path, subtitle_path, videofps = [None] * 4
@@ -82,7 +83,7 @@ def downloader(*args, **kwargs):
             videofps = target_stream.fps
 
             logging.info("downloading audio as well!")
-            audio_target = yt.streams.filter(only_audio=True).first()
+            audio_target = streams.filter(only_audio=True).first()
             audio_path = download_file(audio_target, duration=arguments['--duration'],
                                        start=arguments['--start'])
 

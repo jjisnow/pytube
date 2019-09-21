@@ -23,13 +23,11 @@ def wildlife_clip(base_command):
     # uses a short 30s wildlife clip
     url = "https://www.youtube.com/watch?v=5DP5I8Gd6wY"
 
-    # short video with non-safe filename defaults
-    # url = "https://www.youtube.com/watch?v=BpaYqFd5S5c"
-
     command = " ".join((base_command,
                         url,
                         ))
     return command
+
 
 @pytest.fixture
 def calm_owl_clip(base_command):
@@ -40,7 +38,6 @@ def calm_owl_clip(base_command):
                         url,
                         ))
     return command
-
 
 
 @pytest.fixture
@@ -66,7 +63,7 @@ def check_expected(base_command, downloaded_expected, itag, size_expected):
         assert True
     else:
         print(f'Size not correct. Expected {size_expected}, ' \
-                  f'Got {downloaded_expected.stat().st_zize}')
+              f'Got {downloaded_expected.stat().st_zize}')
         assert False
 
 
@@ -98,12 +95,12 @@ def test_audio(wildlife_clip):
     check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
 
 
-def test_combined(wildlife_clip):
-    # test for low quality video file download
-    downloaded_expected = Path("Short wildlife video clip HD-output.mkv")
-    itag = 278
-    size_expected = 37274
-    check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
+# def test_combined(wildlife_clip):
+#     # test for low quality video file download
+#     downloaded_expected = Path("Short wildlife video clip HD-output.mkv")
+#     itag = 278
+#     size_expected = 37274
+#     check_expected(wildlife_clip, downloaded_expected, itag, size_expected)
 
 
 def test_hq_combined(calm_owl_clip):
@@ -114,25 +111,23 @@ def test_hq_combined(calm_owl_clip):
     check_expected(calm_owl_clip, downloaded_expected, itag, size_expected)
 
 
-def test_audio_captions(captions):
-    # test for audio file only
-    base_command = captions
-    downloaded_expected = Path(
-        "YouTube Captions and Subtitles-audio.mp3")
-    itag = 249
-    size_expected = 4365
-    check_expected(base_command, downloaded_expected, itag, size_expected)
+# def test_audio_captions(captions):
+#     # test for audio file only
+#     base_command = captions
+#     downloaded_expected = Path(
+#         "YouTube Captions and Subtitles-audio.mp3")
+#     itag = 249
+#     size_expected = 4365
+#     check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
-def test_combined_captions(captions):
-    # test for low quality video file muxing
-    base_command = captions
-    downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
-    if downloaded_expected.is_file():
-        os.remove(downloaded_expected)
-    itag = 278
-    size_expected = 21955
-    check_expected(base_command, downloaded_expected, itag, size_expected)
+# def test_combined_captions(captions):
+#     # test for low quality video file muxing
+#     base_command = captions
+#     downloaded_expected = Path("YouTube Captions and Subtitles-output.mkv")
+#     itag = 278
+#     size_expected = 21955
+#     check_expected(base_command, downloaded_expected, itag, size_expected)
 
 
 def test_hq_mux(captions):
