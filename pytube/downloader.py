@@ -47,9 +47,11 @@ def timing(fn):
         time_start = time.time()
         result = fn(*args, **kw)
         time_end = time.time()
-        run_time = time_end - time_start
+        run_secs = time_end - time_start
+        date_secs = datetime.datetime.utcfromtimestamp(run_secs)
+        run_time = date_secs.time()
         print(f'function:{fn.__name__} args:[{args}, {kw}]'
-              f' --- {datetime.timedelta(seconds=run_time)} sec --- ')
+              f' --- {run_time.isoformat(timespec="milliseconds")} secs --- ')
         return result
 
     return wrap
