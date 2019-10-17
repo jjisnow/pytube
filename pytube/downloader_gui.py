@@ -29,29 +29,11 @@ class Page1(QWizardPage):
         self.setSubTitle("Please input a URL to download")
 
         layout = QVBoxLayout()
-        #
-        # self.comboBox = QIComboBox(self)
-        # self.comboBox.addItem("Python", "/path/to/filename1")
-        # self.comboBox.addItem("PyQt5", "/path/to/filename2")
-        # layout.addWidget(self.comboBox)
-        #
-        # file_box = QHBoxLayout()
-        # layout.addLayout(file_box)
 
-        # self.myTextBox = QTextEdit(self)
         self.myTextBox = QLineEdit(self)
         self.myTextBox.setAlignment(Qt.AlignLeft)
         self.registerField("TextBox", self.myTextBox)
-        # self.myTextBox.setGeometry(QtCore.QRect(100, 0, 350, 50))
-        # file_box.addWidget(self.myTextBox)
         layout.addWidget(self.myTextBox)
-
-        # self.uploader = QPushButton("upload", self)
-        # # self.uploader.clicked.connect(self.get_file_name)
-        # file_box.addWidget(self.uploader)
-
-        # self.spacer = QSpacerItem(0, 0)
-        # layout.addSpacerItem(self.spacer)
 
         self.setLayout(layout)
 
@@ -61,6 +43,7 @@ class Page2(QWizardPage):
         super(Page2, self).__init__(parent)
         self.setTitle("Choose itag")
         self.setSubTitle("Choose an itag corresponding to a video or audio stream")
+
         layout = QVBoxLayout()
 
         self.label1 = QLabel()
@@ -68,8 +51,10 @@ class Page2(QWizardPage):
 
         hbox = QHBoxLayout()
         layout.addLayout(hbox)
+
         self.label2 = QLabel()
         hbox.addWidget(self.label2, alignment=Qt.AlignLeft)
+
         self.itag_box = QLineEdit()
         self.registerField("iTag*", self.itag_box)
         hbox.addWidget(self.itag_box)
