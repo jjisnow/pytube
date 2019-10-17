@@ -132,7 +132,7 @@ def downloader(*args, **kwargs):
         cleanup_files(audio_path, video_path, subtitle_path)
         logging.info(f"Final output file: {final_fp}")
 
-    return 0
+    return final_fp
 
 
 def parse_arguments(*args, **kwargs):
