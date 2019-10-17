@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 
+from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 from pytube import downloader
@@ -65,15 +66,22 @@ class Page2(QWizardPage):
         self.label1 = QLabel()
         layout.addWidget(self.label1)
 
+        hbox = QHBoxLayout()
+        layout.addLayout(hbox)
+        self.label2 = QLabel()
+        hbox.addWidget(self.label2, alignment=Qt.AlignLeft)
         self.itag_box = QLineEdit()
         self.registerField("iTag*", self.itag_box)
-        layout.addWidget(self.itag_box)
+        hbox.addWidget(self.itag_box)
 
         self.setLayout(layout)
 
     def initializePage(self):
         tb = self.field("TextBox")
+        self.label2.setText("itag: ")
         itag_descr = downloader.downloader(tb, "--list")
+        font = self.label1.font()
+        self.label1.setFont(QtGui.QFont("Courier", 6, QtGui.QFont.Medium))
         self.label1.setText(itag_descr)
 
 
@@ -91,7 +99,7 @@ class Page3(QWizardPage):
         tb = self.field("TextBox")
         itag = self.field("iTag")
         final_path = downloader.downloader(tb, "--itag", itag, "-v")
-        self.label1.setText(f"Downloaded video: {final_path}")
+        self.label1.setText(f"Downloaded video: \'{final_path}\'")
 
 if __name__ == '__main__':
     import sys
