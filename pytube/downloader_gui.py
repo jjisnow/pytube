@@ -7,24 +7,19 @@ from PyQt5.QtWidgets import *
 from pytube import downloader
 
 
-class QIComboBox(QComboBox):
-    def __init__(self, parent=None):
-        super(QIComboBox, self).__init__(parent)
-
-
 class MagicWizard(QWizard):
     def __init__(self, parent=None):
         super(MagicWizard, self).__init__(parent)
-        self.addPage(Page1(self))
-        self.addPage(Page2(self))
-        self.addPage(Page3(self))
+        self.addPage(url_page(self))
+        self.addPage(itag_page(self))
+        self.addPage(final_path_page(self))
         self.setWindowTitle("Pytube GUI Downloader")
         # self.resize(640,480)
 
 
-class Page1(QWizardPage):
+class url_page(QWizardPage):
     def __init__(self, parent=None):
-        super(Page1, self).__init__(parent)
+        super(url_page, self).__init__(parent)
         self.setTitle("Choose video link")
         self.setSubTitle("Please input a URL to download")
 
@@ -38,9 +33,9 @@ class Page1(QWizardPage):
         self.setLayout(layout)
 
 
-class Page2(QWizardPage):
+class itag_page(QWizardPage):
     def __init__(self, parent=None):
-        super(Page2, self).__init__(parent)
+        super(itag_page, self).__init__(parent)
         self.setTitle("Choose itag")
         self.setSubTitle("Choose an itag corresponding to a video or audio stream")
 
@@ -70,9 +65,9 @@ class Page2(QWizardPage):
         self.label1.setText(itag_descr)
 
 
-class Page3(QWizardPage):
+class final_path_page(QWizardPage):
     def __init__(self, parent=None):
-        super(Page3, self).__init__(parent)
+        super(final_path_page, self).__init__(parent)
         layout = QVBoxLayout()
 
         self.label1 = QLabel()
@@ -84,7 +79,9 @@ class Page3(QWizardPage):
         tb = self.field("TextBox")
         itag = self.field("iTag")
         final_path = downloader.downloader(tb, "--itag", itag, "-v")
+        self.label1.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.label1.setText(f"Downloaded video: \'{final_path}\'")
+
 
 if __name__ == '__main__':
     import sys
