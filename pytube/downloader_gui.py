@@ -90,8 +90,8 @@ class Page3(QWizardPage):
     def initializePage(self):
         tb = self.field("TextBox")
         itag = self.field("iTag")
-        self.label1.setText("Downloading video...")
-        downloader.downloader(tb, "--itag", itag, "-v")
+        final_path = downloader.downloader(tb, "--itag", itag, "-v")
+        self.label1.setText(f"Downloaded video: {final_path}")
 
 if __name__ == '__main__':
     import sys

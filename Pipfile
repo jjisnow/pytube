@@ -7,6 +7,8 @@ name = "pypi"
 tabulate = "*"
 pysrt = "*"
 docopt = "*"
+pyqt5 = "*"
+pyqt5-stubs = "*"
 
 [dev-packages]
 "flake8" = "*"
