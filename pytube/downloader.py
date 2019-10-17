@@ -24,6 +24,7 @@ import datetime
 import math
 import os
 import shutil
+import sys
 from functools import wraps
 from pprint import pformat
 
@@ -62,7 +63,7 @@ def downloader(*args, **kwargs):
     ''' main interface for downloader file
     '''
 
-    arguments = parse_arguments()
+    arguments = parse_arguments(*args, **kwargs)
     config_loggers(arguments)
     arguments = check_url(arguments)
     check_requirements('aria2c', 'ffmpeg')
@@ -71,9 +72,9 @@ def downloader(*args, **kwargs):
         logging.debug(f"Parsing url: {file}")
         yt = YouTube(file)
         streams = yt.streams
-        parse_streams(streams.all())
+        stream_table = parse_streams(streams.all())
         if arguments['--list']:
-            return 0
+            return stream_table
 
         itag = get_itag(arguments)
         target_stream = streams.get_by_itag(itag)
@@ -134,9 +135,9 @@ def downloader(*args, **kwargs):
     return 0
 
 
-def parse_arguments():
+def parse_arguments(*args, **kwargs):
     '''set arguments dictionary from supplied arguments'''
-    arguments = docopt(__doc__, help=True)
+    arguments = docopt(__doc__, argv=args, help=True)
     if arguments['--verbose']:
         log_level = logging.DEBUG
     elif arguments['--quiet']:
@@ -218,7 +219,9 @@ def parse_streams(streams):
             stream_dict[k] = v
         final_list.append(stream_dict)
 
-    print(tabulate(final_list, headers="keys"))
+    stream_table = tabulate(final_list, headers="keys")
+    print(stream_table)
+    return stream_table
 
 
 def get_itag(arguments):
@@ -498,4 +501,4 @@ def make_aac(audio_path):
 
 
 if __name__ == '__main__':
-    downloader()
+    downloader(sys.argv[1:])
