@@ -14,6 +14,10 @@ class MagicWizard(QWizard):
         self.addPage(itag_page(self))
         self.addPage(final_path_page(self))
         self.setWindowTitle("Pytube GUI Downloader")
+        self.setWindowIcon(
+            QtGui.QIcon(
+                os.path.join("..", "images", "rooster.png")
+            ))
         # self.resize(640,480)
 
 
