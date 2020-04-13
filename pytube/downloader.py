@@ -72,7 +72,7 @@ def downloader(*args, **kwargs):
         logging.debug(f"Parsing url: {file}")
         yt = YouTube(file)
         streams = yt.streams
-        stream_table = parse_streams(streams.all())
+        stream_table = parse_streams(streams)
         if arguments['--list']:
             return stream_table
 
@@ -137,7 +137,7 @@ def downloader(*args, **kwargs):
 
 def parse_arguments(*args, **kwargs):
     '''set arguments dictionary from supplied arguments'''
-    arguments = docopt(__doc__, argv=args, help=True)
+    arguments = docopt(__doc__, argv=args[0], help=True)
     if arguments['--verbose']:
         log_level = logging.DEBUG
     elif arguments['--quiet']:
@@ -299,7 +299,8 @@ def download_file(download_target, duration=None, start=None):
 
 def download_captions(yt, lang='English', duration=None, start=None):
     i = None
-    captions = list(enumerate(yt.captions.all()))
+    caption_list = list(yt.captions.lang_code_index.values())
+    captions = enumerate(caption_list)
     captions_string = pformat(captions)
     logging.debug(f'captions available: {captions_string}')
     for index, c in captions:
@@ -318,7 +319,7 @@ def download_captions(yt, lang='English', duration=None, start=None):
         os.remove(subt_fp)
     with open(subt_fp, 'w', encoding='utf-8') as f:
         logging.debug(f'Writing {subt_fp}')
-        lines = yt.captions.captions[i].generate_srt_captions()
+        lines = yt.caption_tracks[i].generate_srt_captions()
         f.write(lines)
 
     # retime the subtitles
