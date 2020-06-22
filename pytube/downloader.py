@@ -237,7 +237,7 @@ def get_itag(arguments):
     return itag
 
 
-def download_file(download_target, duration=None, start=None):
+def download_file(download_target, duration=None, start=0):
     '''download stream given a download_target.
     Note that ffmpeg already has a HH:MM:SS.ms specification limited to 2 digits for
     HH, MM and SS'''
@@ -376,12 +376,12 @@ def mux_files(audio_fp, video_fp=None, subt_fp=None, videofps=None):
 
     final_fp = "".join((str(final_fp.with_suffix('')),
                         "-output",
-                        ".mkv"
+                        ".mp4"
                         ))
     audio_fp_text = ('-i', f'{audio_fp}') if audio_fp else ()
     video_fp_text = ('-i', f'{video_fp}') if video_fp else ()
     subt_fp = () if subt_fp is None else ('-i', f'{subt_fp}')
-    subt_text = ('-c:s', 'srt') if subt_fp else ()
+    subt_extension = ('-c:s', 'srt') if subt_fp else ()
     videofps_text = ('-r', f'{videofps}') if videofps else ()
     if Path(final_fp).is_file():
         logging.error(f"{final_fp} already exists! Will overwrite...")
@@ -394,7 +394,7 @@ def mux_files(audio_fp, video_fp=None, subt_fp=None, videofps=None):
            *videofps_text,
            '-c:a', 'copy',
            '-c:v', 'copy',
-           *subt_text,
+           *subt_extension,
            f'{final_fp}')
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=False, check=True)
@@ -493,8 +493,8 @@ def make_aac(audio_path):
            '-i', f'{audio_path}',
            '-c:a', 'aac',
            '-q:a', '0',
-           '-profile:a', 'aac_main'
-                         f'{fp}')
+           '-profile:a', 'aac_main',
+           f'{fp}')
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=False, check=True)
     fp = Path(fp)
