@@ -80,12 +80,12 @@ def downloader(*args, **kwargs):
         target_stream = streams.get_by_itag(itag)
 
         logging.info("DOWNLOADING:")
-        video_path, audio_path, subtitle_path, videofps = [None] * 4
+        video_path, audio_path, subtitle_path, video_fps = [None] * 4
         if not target_stream.includes_audio_track:
             logging.info("downloading video first......")
             video_path = download_file(target_stream, duration=arguments['--duration'],
                                        start=arguments['--start'])
-            videofps = target_stream.fps
+            video_fps = target_stream.fps
 
             logging.info("downloading audio as well!")
             audio_target = streams.filter(only_audio=True).first()
@@ -98,7 +98,7 @@ def downloader(*args, **kwargs):
                 video_path = download_file(target_stream,
                                            duration=arguments['--duration'],
                                            start=arguments['--start'])
-                videofps = target_stream.fps
+                video_fps = target_stream.fps
 
             elif target_stream.type == 'audio':
                 audio_target = target_stream
@@ -128,7 +128,7 @@ def downloader(*args, **kwargs):
                 final_fp = mux_files(audio_path)
 
         else:
-            final_fp = mux_files(audio_path, video_path, subtitle_path, videofps)
+            final_fp = mux_files(audio_path, video_path, subtitle_path, video_fps)
         cleanup_files(audio_path, video_path, subtitle_path)
         logging.info(f"Final output file: {final_fp}")
 
@@ -237,7 +237,7 @@ def get_itag(arguments):
     return itag
 
 
-def download_file(download_target, duration=None, start=0):
+def download_file(download_target, duration: str = None, start: int = 0):
     '''download stream given a download_target.
     Note that ffmpeg already has a HH:MM:SS.ms specification limited to 2 digits for
     HH, MM and SS'''
@@ -297,7 +297,7 @@ def download_file(download_target, duration=None, start=0):
     return fp
 
 
-def download_captions(yt, lang='English', duration=None, start=None):
+def download_captions(yt: YouTube, lang: str = 'English', duration: str = None, start: str = None):
     i = None
     caption_list = list(yt.captions.lang_code_index.values())
     captions = enumerate(caption_list)
@@ -313,14 +313,14 @@ def download_captions(yt, lang='English', duration=None, start=None):
         return None
 
     subt_base = Path(yt.fmt_streams[0].default_filename).stem
-    subt_fp = f'{subt_base}-captions.srt'
+    subt_fp = Path(f'{subt_base}-captions.srt')
+
     if os.path.exists(subt_fp):
         logging.info(f'File {subt_fp} exists already!! Deleting')
         os.remove(subt_fp)
-    with open(subt_fp, 'w', encoding='utf-8') as f:
-        logging.debug(f'Writing {subt_fp}')
-        lines = yt.caption_tracks[i].generate_srt_captions()
-        f.write(lines)
+    logging.debug(f'Writing {subt_fp}')
+    lines = yt.caption_tracks[i].generate_srt_captions()
+    subt_fp.write_text(lines, encoding='utf-8')
 
     # retime the subtitles
     if start or duration:
@@ -344,7 +344,7 @@ def download_captions(yt, lang='English', duration=None, start=None):
     return subt_fp
 
 
-def strp_time(time_str):
+def strp_time(time_str: str):
     ''' returns corrected number of seconds given ':' string'''
     if ':' not in time_str:
         return time_str
@@ -356,7 +356,7 @@ def strp_time(time_str):
         return str(secs)
 
 
-def mux_files(audio_fp, video_fp=None, subt_fp=None, videofps=None):
+def mux_files(audio_path: Path, video_path: Path = None, subt_path: Path = None, video_fps: str = None):
     '''mux file streams supplied'''
     logging.info("attempting to mix audio and video")
     # -y: global ie overwrite without asking
@@ -367,43 +367,43 @@ def mux_files(audio_fp, video_fp=None, subt_fp=None, videofps=None):
     # -c:v copy means copy video stream codec
     # -c:s srt means copy subtitles as srt
     # -filter:a aresample=async=1 means resample audio to fit frame rates
-    if video_fp:
-        final_fp = video_fp
-    elif audio_fp:
-        final_fp = audio_fp
+    if video_path:
+        final_path = video_path
+    elif audio_path:
+        final_path = audio_path
     else:
         logging.error("no audio or video file path supplied")
 
-    final_fp = "".join((str(final_fp.with_suffix('')),
+    final_path = "".join((str(final_path.with_suffix('')),
                         "-output",
                         ".mp4"
                         ))
-    audio_fp_text = ('-i', f'{audio_fp}') if audio_fp else ()
-    video_fp_text = ('-i', f'{video_fp}') if video_fp else ()
-    subt_fp = () if subt_fp is None else ('-i', f'{subt_fp}')
-    subt_extension = ('-c:s', 'srt') if subt_fp else ()
-    videofps_text = ('-r', f'{videofps}') if videofps else ()
-    if Path(final_fp).is_file():
-        logging.error(f"{final_fp} already exists! Will overwrite...")
+    audio_path_text = ('-i', f'{audio_path}') if audio_path else ()
+    video_path_text = ('-i', f'{video_path}') if video_path else ()
+    subt_path = () if subt_path is None else ('-i', f'{subt_path}')
+    subt_extension = ('-c:s', 'srt') if subt_path else ()
+    video_fps_text = ('-r', f'{video_fps}') if video_fps else ()
+    if Path(final_path).is_file():
+        logging.error(f"{final_path} already exists! Will overwrite...")
 
     cmd = ('ffmpeg',
            '-y',
-           *audio_fp_text,
-           *video_fp_text,
-           *subt_fp,
-           *videofps_text,
+           *audio_path_text,
+           *video_path_text,
+           *subt_path,
+           *video_fps_text,
            '-c:a', 'copy',
            '-c:v', 'copy',
            *subt_extension,
-           f'{final_fp}')
+           f'{final_path}')
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=False, check=True)
-    logging.info(f"Final muxed file: {final_fp}")
+    logging.info(f"Final muxed file: {final_path}")
 
-    return final_fp
+    return final_path
 
 
-def cleanup_files(audio_path, subtitle_path, video_path):
+def cleanup_files(audio_path: Path, subtitle_path: Path, video_path: Path):
     '''cleanup file paths supplied'''
     logging.info("CLEANUP:")
     for k, v in {'audio'    : audio_path,
