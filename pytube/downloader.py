@@ -59,11 +59,11 @@ def timing(fn):
 
 
 @timing
-def downloader(*args, **kwargs):
+def downloader(args: list):
     ''' main interface for downloader file
     '''
 
-    arguments = parse_arguments(*args, **kwargs)
+    arguments = parse_arguments(args)
     config_loggers(arguments)
     arguments = check_url(arguments)
     check_requirements('aria2c', 'ffmpeg')
@@ -121,23 +121,23 @@ def downloader(*args, **kwargs):
             if (audio_path.suffix == '.webm' and target_stream.audio_codec == 'opus') \
                     or (
                     audio_path.suffix == '.mp4' and 'mp4' in target_stream.audio_codec):
-                final_fp = make_mp3(audio_path)  # the default
+                final_path = make_mp3(audio_path)  # the default
                 # final_fp = make_aac(audio_path)  # not supported by all platforms
                 # final_fp = make_ogg(audio_path)  # not supported by all platforms
             else:
-                final_fp = mux_files(audio_path)
+                final_path = mux_files(audio_path)
 
         else:
-            final_fp = mux_files(audio_path, video_path, subtitle_path, video_fps)
+            final_path = mux_files(audio_path, video_path, subtitle_path, video_fps)
         cleanup_files(audio_path, video_path, subtitle_path)
-        logging.info(f"Final output file: {final_fp}")
+        logging.info(f"Final output file: {final_path}")
 
-    return final_fp
+    return final_path
 
 
-def parse_arguments(*args, **kwargs):
+def parse_arguments(args):
     '''set arguments dictionary from supplied arguments'''
-    arguments = docopt(__doc__, argv=args[0], help=True)
+    arguments = docopt(__doc__, argv=args, help=True)
     if arguments['--verbose']:
         log_level = logging.DEBUG
     elif arguments['--quiet']:
@@ -224,7 +224,7 @@ def parse_streams(streams):
     return stream_table
 
 
-def get_itag(arguments):
+def get_itag(arguments: dict):
     while True:
         if arguments['--itag']:
             itag = arguments['--itag']
@@ -238,22 +238,19 @@ def get_itag(arguments):
 
 
 def download_file(download_target, duration: str = None, start: int = 0):
-    '''download stream given a download_target.
+    '''download stream given a download_target (a stream object either audio or video,
+    captions are handled separately).
     Note that ffmpeg already has a HH:MM:SS.ms specification limited to 2 digits for
     HH, MM and SS'''
     logging.debug(f"current directory: {Path.cwd()}")
     logging.info(f"Downloading itag: {download_target.itag}")
     logging.info(f"Download url: {download_target.url}")
 
-    fp = Path(download_target.default_filename)
+    download_path = Path(download_target.default_filename)
     if start == None:
         start = '0'
-    if download_target.type == 'audio':
-        fp = ''.join((str(fp.with_suffix('').name),
-                      "-audio",
-                      fp.suffix
-                      ))
-    logging.debug(f"Targeting destination: {fp}")
+    download_path = Path(f"{download_path.stem}-{download_target.type}{download_path.suffix}")
+    logging.debug(f"Targeting destination: {download_path}")
     if duration:
         # download the file with ffmpeg
         # -ss : start point to download in HH:MM:SS.MILLISECONDS format if needed
@@ -270,7 +267,7 @@ def download_file(download_target, duration: str = None, start: int = 0):
                '-t', f'{duration}',
                '-c:v', 'copy',
                '-c:a', 'copy',
-               f'{fp}')
+               f'{download_path}')
 
     else:
         # download the entire file with aria
@@ -287,14 +284,13 @@ def download_file(download_target, duration: str = None, start: int = 0):
                '--optimize-concurrent-downloads=true',
                '-k', '1M',
                '--split=5',
-               '-o', f'{fp}',
+               '-o', f'{download_path}',
                f'{download_target.url}')
 
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=False, check=True)
-    fp = Path(fp)
-    logging.info(f"Final {download_target.type} file: {fp}")
-    return fp
+    logging.info(f"Final {download_target.type} file: {download_path}")
+    return download_path
 
 
 def download_captions(yt: YouTube, lang: str = 'English', duration: str = None, start: str = None):
@@ -368,22 +364,23 @@ def mux_files(audio_path: Path, video_path: Path = None, subt_path: Path = None,
     # -c:s srt means copy subtitles as srt
     # -filter:a aresample=async=1 means resample audio to fit frame rates
     if video_path:
-        final_path = video_path
+        # removes "-video" from name end
+        if video_path.stem.endswith('-video'):
+            final_path = Path(video_path.stem[:-6]).with_suffix(video_path.suffix)
     elif audio_path:
+        # leaves "-audio" on end for only audio files
         final_path = audio_path
     else:
         logging.error("no audio or video file path supplied")
 
-    final_path = "".join((str(final_path.with_suffix('')),
-                        "-output",
-                        ".mp4"
-                        ))
+    # Using '.mkv' to handle subtitles for time being
+    final_path = Path(f'{final_path.stem}-output.mkv')
     audio_path_text = ('-i', f'{audio_path}') if audio_path else ()
     video_path_text = ('-i', f'{video_path}') if video_path else ()
     subt_path = () if subt_path is None else ('-i', f'{subt_path}')
     subt_extension = ('-c:s', 'srt') if subt_path else ()
     video_fps_text = ('-r', f'{video_fps}') if video_fps else ()
-    if Path(final_path).is_file():
+    if final_path.is_file():
         logging.error(f"{final_path} already exists! Will overwrite...")
 
     cmd = ('ffmpeg',
@@ -421,7 +418,7 @@ def cleanup_files(audio_path: Path, subtitle_path: Path, video_path: Path):
             logging.debug(f'CLEANUP: no {k} file detected')
 
 
-def make_mp3(audio_path):
+def make_mp3(audio_path: Path):
     '''convert from a webm file to an mp3'''
     logging.debug(f"current directory: {Path.cwd()}")
     fp = audio_path.with_suffix('.mp3')
@@ -433,7 +430,7 @@ def make_mp3(audio_path):
     # -q:a 0   : highest variable audio quality
     # -n : exit immediately if file exists
     # -y : overwrite output files without asking
-    if Path(fp).is_file():
+    if fp.is_file():
         logging.error(f"{fp} already exists! Will overwrite...")
     cmd = ('ffmpeg',
            '-y',
@@ -443,11 +440,10 @@ def make_mp3(audio_path):
            f'{fp}')
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=False, check=True)
-    fp = Path(fp)
     return fp
 
 
-def make_ogg(audio_path):
+def make_ogg(audio_path: Path):
     '''convert from a webm file to an ogg'''
     logging.debug(f"current directory: {Path.cwd()}")
     fp = audio_path.with_suffix('.ogg')
@@ -457,7 +453,7 @@ def make_ogg(audio_path):
     # -c:a copy : use the same audio codec
     # -n : exit immediately if file exists
     # -y : overwrite output files without asking
-    if Path(fp).is_file():
+    if fp.is_file():
         logging.error(f"{fp} already exists! Will overwrite...")
     cmd = ('ffmpeg',
            '-y',
@@ -468,11 +464,10 @@ def make_ogg(audio_path):
 
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=False, check=True)
-    fp = Path(fp)
     return fp
 
 
-def make_aac(audio_path):
+def make_aac(audio_path: Path):
     '''convert from a file to an aac'''
     logging.debug(f"current directory: {Path.cwd()}")
     fp = audio_path.with_suffix('.aac')
@@ -486,7 +481,7 @@ def make_aac(audio_path):
     # the aac_ltp option. Introduced in MPEG4.
     # -n : exit immediately if file exists
     # -y : overwrite output files without asking
-    if Path(fp).is_file():
+    if fp.is_file():
         logging.error(f"{fp} already exists! Will overwrite...")
     cmd = ('ffmpeg',
            '-y',
@@ -497,7 +492,6 @@ def make_aac(audio_path):
            f'{fp}')
     logging.debug(f"Command to be run: {cmd}")
     subprocess.run(cmd, shell=False, check=True)
-    fp = Path(fp)
     return fp
 
 
