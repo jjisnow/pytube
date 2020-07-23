@@ -135,7 +135,7 @@ def downloader(args: list):
     return final_path
 
 
-def parse_arguments(args):
+def parse_arguments(args: dict) -> dict:
     '''set arguments dictionary from supplied arguments'''
     arguments = docopt(__doc__, argv=args, help=True)
     if arguments['--verbose']:
@@ -150,16 +150,16 @@ def parse_arguments(args):
     return arguments
 
 
-def config_loggers(arguments):
+def config_loggers(args: dict) -> None:
     """ displays the supplied arguments to stdout before switching back to
     the stderr handler
 
-    :param arguments:
+    :param args:
     :param log_level:
     :return:
     """
 
-    log_level = arguments['log_level']
+    log_level = args['log_level']
     logging.basicConfig(level=log_level)
     logger = logging.getLogger()
 
@@ -172,27 +172,27 @@ def config_loggers(arguments):
     # root_handler.setLevel(log_level)
     # logger.removeHandler(root_handler)
 
-    logging.info(f"Supplied args: \n {arguments}")
+    logging.info(f"Supplied args: \n {args}")
     # logger.removeHandler(stdout_handler)
     # logger.addHandler(root_handler)
 
 
-def check_url(arguments):
+def check_url(args: dict) -> dict:
     ''' parse the url and obtain one if none provided
     Use a provided link or the args provided
     '''
-    while len(arguments['URL']) == 0:
+    while len(args['URL']) == 0:
         link = input("Provide a youtube link to download: ")
-        arguments['URL'].append(link)
-        if arguments['URL'][0] == '':
+        args['URL'].append(link)
+        if args['URL'][0] == '':
             print("a link must be supplied!")
-            del arguments['URL'][0]
-    logging.info(f"Final args: {arguments}")
+            del args['URL'][0]
+    logging.info(f"Final args: {args}")
 
-    return arguments
+    return args
 
 
-def check_requirements(*args):
+def check_requirements(*args) -> None:
     '''ensure executables supplied exist on the file system'''
     logging.debug(f'Requirements: {args}')
     for arg in args:
@@ -204,7 +204,7 @@ def check_requirements(*args):
             raise Exception(f'Requirement: {arg} not met! status: {status}')
 
 
-def parse_streams(streams):
+def parse_streams(streams) -> str:
     '''
     take yt.streams.all() and print it as a table for viewing
     '''
@@ -224,10 +224,10 @@ def parse_streams(streams):
     return stream_table
 
 
-def get_itag(arguments: dict):
+def get_itag(args: dict) -> int:
     while True:
-        if arguments['--itag']:
-            itag = arguments['--itag']
+        if args['--itag']:
+            itag = args['--itag']
             break
         try:
             itag = int(input("Which stream do you want? (specify itag): "))
@@ -237,7 +237,7 @@ def get_itag(arguments: dict):
     return itag
 
 
-def download_file(download_target, duration: str = None, start: int = 0):
+def download_file(download_target, duration: str = None, start: int = 0) -> Path:
     '''download stream given a download_target (a stream object either audio or video,
     captions are handled separately).
     Note that ffmpeg already has a HH:MM:SS.ms specification limited to 2 digits for
@@ -293,7 +293,8 @@ def download_file(download_target, duration: str = None, start: int = 0):
     return download_path
 
 
-def download_captions(yt: YouTube, lang: str = 'English', duration: str = None, start: str = None):
+def download_captions(yt: YouTube, lang: str = 'English',
+                      duration: str = None, start: str = None) -> Path:
     i = None
     caption_list = list(yt.captions.lang_code_index.values())
     captions = enumerate(caption_list)
@@ -340,8 +341,8 @@ def download_captions(yt: YouTube, lang: str = 'English', duration: str = None, 
     return subt_fp
 
 
-def strp_time(time_str: str):
-    ''' returns corrected number of seconds given ':' string'''
+def strp_time(time_str: str) -> str:
+    ''' returns corrected number of seconds given a variation of HH:MM:SS.milliseconds string'''
     if ':' not in time_str:
         return time_str
     else:
@@ -352,7 +353,8 @@ def strp_time(time_str: str):
         return str(secs)
 
 
-def mux_files(audio_path: Path, video_path: Path = None, subt_path: Path = None, video_fps: str = None):
+def mux_files(audio_path: Path, video_path: Path = None,
+              subt_path: Path = None, video_fps: str = None) -> Path:
     '''mux file streams supplied'''
     logging.info("attempting to mix audio and video")
     # -y: global ie overwrite without asking
@@ -400,7 +402,7 @@ def mux_files(audio_path: Path, video_path: Path = None, subt_path: Path = None,
     return final_path
 
 
-def cleanup_files(audio_path: Path, subtitle_path: Path, video_path: Path):
+def cleanup_files(audio_path: Path, subtitle_path: Path, video_path: Path) -> None:
     '''cleanup file paths supplied'''
     logging.info("CLEANUP:")
     for k, v in {'audio'    : audio_path,
@@ -418,7 +420,7 @@ def cleanup_files(audio_path: Path, subtitle_path: Path, video_path: Path):
             logging.debug(f'CLEANUP: no {k} file detected')
 
 
-def make_mp3(audio_path: Path):
+def make_mp3(audio_path: Path) -> Path:
     '''convert from a webm file to an mp3'''
     logging.debug(f"current directory: {Path.cwd()}")
     fp = audio_path.with_suffix('.mp3')
@@ -443,7 +445,7 @@ def make_mp3(audio_path: Path):
     return fp
 
 
-def make_ogg(audio_path: Path):
+def make_ogg(audio_path: Path) -> Path:
     '''convert from a webm file to an ogg'''
     logging.debug(f"current directory: {Path.cwd()}")
     fp = audio_path.with_suffix('.ogg')
@@ -467,7 +469,7 @@ def make_ogg(audio_path: Path):
     return fp
 
 
-def make_aac(audio_path: Path):
+def make_aac(audio_path: Path) -> Path:
     '''convert from a file to an aac'''
     logging.debug(f"current directory: {Path.cwd()}")
     fp = audio_path.with_suffix('.aac')
