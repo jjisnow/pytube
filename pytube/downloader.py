@@ -301,6 +301,7 @@ def download_captions(yt: YouTube, lang: str = 'English',
     captions_string = pformat(captions)
     logging.debug(f'captions available: {captions_string}')
     for index, c in captions:
+        logging.debug(f'{index} index: {c} caption')
         if lang in str(c):
             i = index
             logging.debug(f'found {lang} captions at index {i}')
@@ -402,7 +403,7 @@ def mux_files(audio_path: Path, video_path: Path = None,
     return final_path
 
 
-def cleanup_files(audio_path: Path, subtitle_path: Path, video_path: Path) -> None:
+def cleanup_files(audio_path: Path = None, video_path: Path = None, subtitle_path: Path = None, ) -> None:
     '''cleanup file paths supplied'''
     logging.info("CLEANUP:")
     for k, v in {'audio'    : audio_path,
