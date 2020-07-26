@@ -59,7 +59,7 @@ def timing(fn):
 
 
 @timing
-def downloader(args: list):
+def downloader(*args: tuple):
     ''' main interface for downloader file
     '''
 
@@ -135,7 +135,7 @@ def downloader(args: list):
     return final_path
 
 
-def parse_arguments(args: dict) -> dict:
+def parse_arguments(args: tuple) -> dict:
     '''set arguments dictionary from supplied arguments'''
     arguments = docopt(__doc__, argv=args, help=True)
     if arguments['--verbose']:
@@ -499,4 +499,4 @@ def make_aac(audio_path: Path) -> Path:
 
 
 if __name__ == '__main__':
-    downloader(sys.argv[1:])
+    downloader(*sys.argv[1:])
