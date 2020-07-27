@@ -84,7 +84,7 @@ class final_path_page(QWizardPage):
         itag = self.field("iTag")
         final_path = downloader.downloader(tb, "--itag", itag, "-v")
         self.label1.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.label1.setText(f"Downloaded video: \'{final_path}\'")
+        self.label1.setText(f"Final output file: \'{final_path}\'")
 
 
 if __name__ == '__main__':
